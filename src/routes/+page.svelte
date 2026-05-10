@@ -1,8 +1,8 @@
 <script lang="ts">
-  import HeroSection from '$lib/components/HeroSection.svelte';
+  import Billboard from '$components/Billboard.svelte';
   import type { PageProps } from './$types';
-  import { getMoviesContext } from '$lib/stores/MovieStore.svelte';
-  import Carousel from '$lib/components/Carousel.svelte';
+  import { getMoviesContext } from '$stores/MovieStore.svelte';
+  import ContentRow from '$components/ContentRow.svelte';
 
   const { data }: PageProps = $props();
   const movieStore = getMoviesContext();
@@ -12,15 +12,15 @@
   });
 </script>
 
-<HeroSection />
+<Billboard />
 
 <div class="absolute top-[35vh] flex w-full flex-col space-y-4 pl-10 md:top-[65vh] lg:top-[85vh]">
-  <Carousel title="Popular Movies" movies={data.popularMovies} />
-  <Carousel title="Trending Movies" movies={data.trendingMovies} />
-  <Carousel title="Top-Rated Movies" movies={data.topRatedMovies} />
+  <ContentRow title="Popular K-Dramas" movies={data.popularMovies} />
+  <ContentRow title="Trending Now" movies={data.trendingMovies} />
+  <ContentRow title="Top-Rated" movies={data.topRatedMovies} />
 
   {#each data.moviesByGenre as { id, name: title, movies } (id)}
-    <Carousel {title} {movies} />
+    <ContentRow {title} {movies} />
   {/each}
 </div>
 

@@ -3,8 +3,6 @@ MIRAE
 未来 / 미래
 The future of streaming.
 
-
-
 WHAT IS MIRAE?
 
 Mirae is a modern Korean drama streaming platform built with:
@@ -16,8 +14,6 @@ Mirae is a modern Korean drama streaming platform built with:
 
 Focused on speed, immersion, and cinematic browsing,
 Mirae delivers a smooth OTT-style experience inspired by modern streaming platforms.
-
-
 
 FEATURES
 
@@ -34,29 +30,29 @@ FEATURES
 - fast navigation
 - dark UI aesthetics
 
-
-
 TECH STACK
 
 Frontend
+
 - SvelteKit
 - TypeScript
 - Tailwind CSS
 
 Runtime
+
 - Bun
 
 APIs
+
 - TMDB API
 - YouTube trailers
 
 Architecture
+
 - component-based structure
 - lazy-loaded media
 - optimized routing
 - edge-ready deployment
-
-
 
 PROJECT STRUCTURE
 
@@ -68,8 +64,6 @@ src/
 ├── styles/
 └── utils/
 
-
-
 DEVELOPMENT
 
 Install dependencies:
@@ -80,15 +74,16 @@ Run development server:
 
 bun run dev
 
+COMMANDS
 
-
-BUILD
-
-Create production build:
-
-bun run build
-
-
+bun dev              Start development server
+bun build            Create production build
+bun start            Run production server
+bun preview          Preview production build
+bun check            Type-check Svelte
+bun check:watch      Type-check in watch mode
+bun lint             Run ESLint and Prettier checks
+bun format           Format code with Prettier
 
 DESIGN PHILOSOPHY
 
@@ -102,8 +97,6 @@ Minimal UI noise.
 Fast interactions.
 Cinematic presentation.
 
-
-
 FUTURE PLANS
 
 - AI recommendations
@@ -115,8 +108,6 @@ FUTURE PLANS
 - recommendation engine
 - social profiles
 
-
-
 PAGES
 
 /home
@@ -126,8 +117,6 @@ PAGES
 /profile
 /my-list
 
-
-
 DISCLAIMER
 
 Mirae is a personal educational project created for learning,
@@ -135,12 +124,8 @@ UI experimentation, and software engineering practice.
 
 All media metadata belongs to their respective owners.
 
-
-
 LICENSE
 
 MIT
-
-
 
 "The future of streaming."

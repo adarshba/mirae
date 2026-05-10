@@ -1,8 +1,8 @@
 <script lang="ts">
   import { goto } from '$app/navigation';
   import Play from '@lucide/svelte/icons/play';
-  import { getModalContext } from '$lib/stores/ModalStore.svelte';
-  import { handleNoImageError } from '$lib/helpers';
+  import { getModalContext } from '$stores/ModalStore.svelte';
+  import { handleNoImageError } from '$utils/helpers';
 
   const { closeModal } = getModalContext();
 
@@ -14,17 +14,7 @@
     imageUrl,
     match = '67% Match',
     rating = '5+'
-  }: Props = $props();
-
-  type Props = {
-    description: string;
-    id: number;
-    title: string;
-    imageUrl: string;
-    duration?: string;
-    match?: string;
-    rating?: string;
-  };
+  }: SimilarCardProps = $props();
 </script>
 
 <div class="w-40 rounded-lg bg-[#181818] text-white shadow-md sm:w-48">

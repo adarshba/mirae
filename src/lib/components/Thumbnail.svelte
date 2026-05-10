@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { handleNoImageError } from '$lib/helpers';
-  import { getMovieCardContext } from '$lib/stores/MovieCardStore.svelte';
+  import { handleNoImageError } from '$utils/helpers';
+  import { getMovieCardContext } from '$stores/MovieCardStore.svelte';
 
   const { movie }: Props = $props();
   const cardStore = getMovieCardContext();
@@ -21,13 +21,8 @@
     };
   };
 
-  const hidePopover = (e: MouseEvent) => {
+  const hidePopover = () => {
     cardStore.isHovered = false;
-    // Add delay before hiding to allow mouse to move to popup
-    // timeout = setTimeout(() => {
-    //   if (cardStore.cardId === movie.id) {
-    //   }
-    // }, 550);
   };
 
   type Props = {

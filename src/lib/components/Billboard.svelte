@@ -3,15 +3,15 @@
   import Play from '@lucide/svelte/icons/play';
   import Volume2 from '@lucide/svelte/icons/volume-2';
   import VolumeOff from '@lucide/svelte/icons/volume-off';
-  import { getMoviesContext } from '$lib/stores/MovieStore.svelte';
+  import { getMoviesContext } from '$stores/MovieStore.svelte';
   import { goto } from '$app/navigation';
-  import { fetchTrailer } from '$lib/helpers';
-  import Player from './Player.svelte';
-  import { getModalContext } from '$lib/stores/ModalStore.svelte';
+  import { fetchTrailer } from '$utils/helpers';
+  import VideoPlayer from '$components/VideoPlayer.svelte';
+  import { getModalContext } from '$stores/ModalStore.svelte';
 
-  const { popularMovies, selectedMovie } = $derived(getMoviesContext());
-  let trailerId: string = $state('');
-  let isMuted: boolean = $state(true);
+  const { selectedMovie } = $derived(getMoviesContext());
+  let trailerId = $state('');
+  let isMuted = $state(true);
 
   const modalContext = getModalContext();
 
@@ -34,7 +34,7 @@
 
 <main class="relative h-screen overflow-hidden">
   {#if trailerId}
-    <Player videoId={trailerId} {isMuted} />
+    <VideoPlayer videoId={trailerId} {isMuted} />
   {/if}
 
   {#if selectedMovie && !trailerId}
@@ -43,10 +43,9 @@
       alt="movie backdrop"
     />
   {/if}
-  <!-- Gradient overlay -->
+
   <div class="to transparent absolute inset-0 bg-linear-to-t from-[#141414]"></div>
 
-  <!-- Movie Details -->
   {#if selectedMovie}
     <div class="absolute top-[45%] z-10 w-full pl-12">
       <h1 class="mb-4 text-4xl font-bold text-white md:text-6xl">{selectedMovie.title}</h1>

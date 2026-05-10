@@ -6,29 +6,28 @@
   import ChevronDown from '@lucide/svelte/icons/chevron-down';
   import Volume2 from '@lucide/svelte/icons/volume-2';
   import VolumeOff from '@lucide/svelte/icons/volume-off';
-  import Player from '$lib/components/Player.svelte';
-  import type PlayerComponent from '$lib/components/Player.svelte';
-  import { fetchTrailer, handleNoImageError } from '$lib/helpers';
-  import { getMovieCardContext } from '$lib/stores/MovieCardStore.svelte';
+  import VideoPlayer from '$components/VideoPlayer.svelte';
+  import { fetchTrailer, handleNoImageError } from '$utils/helpers';
+  import { getMovieCardContext } from '$stores/MovieCardStore.svelte';
   import { goto } from '$app/navigation';
-  import { getFavoritesContext } from '$lib/stores/favoriteListStore.svelte';
+  import { getFavoritesContext } from '$stores/favoriteListStore.svelte';
   import { page } from '$app/state';
-  import { getModalContext } from '$lib/stores/ModalStore.svelte';
+  import { getModalContext } from '$stores/ModalStore.svelte';
 
-  let { position }: Props = $props();
+  let { position }: { position: PopupPosition } = $props();
 
   let { movie, isHovered } = $derived(getMovieCardContext());
   const modalContext = getModalContext();
 
   let isTrailerDisplayed = $state(false);
   let trailerUrl = $state('');
-  let title: string = $derived(movie?.title ?? 'no title');
-  let imageUrl: string = $derived(`https://image.tmdb.org/t/p/w500${movie?.backdrop_path}`);
-  let movieId: number = $derived(movie?.id ?? -1);
+  let title = $derived(movie?.title ?? 'no title');
+  let imageUrl = $derived(`https://image.tmdb.org/t/p/w500${movie?.backdrop_path}`);
+  let movieId = $derived(movie?.id ?? -1);
   const favoriteList = getFavoritesContext();
   const addedToFavorites = $derived(favoriteList.favorites.some((fav) => fav.id === movie?.id));
 
-  let player: PlayerComponent | null = $state(null);
+  let player: ReturnType<typeof VideoPlayer> | null = $state(null);
   let isMuted = $state(true);
 
   $effect(() => {
@@ -49,20 +48,18 @@
     };
   });
 
-  const displayPopover = (e: MouseEvent) => {
-    e.stopPropagation();
-
+  const displayPopover = () => {
     isHovered = true;
   };
-  const hidePopover = (e?: MouseEvent) => {
-    e?.stopPropagation();
 
+  const hidePopover = () => {
     if (isHovered || movie || isTrailerDisplayed) {
       isHovered = false;
       movie = null;
       isTrailerDisplayed = false;
     }
   };
+
   const toggleMute = () => {
     isMuted = !isMuted;
   };
@@ -70,14 +67,9 @@
   const handleImageMouseEnter = () => {
     isTrailerDisplayed = !isTrailerDisplayed;
   };
+
   const handleImageMouseEnterAction = () => {
     isTrailerDisplayed = true;
-  };
-
-  const toggleMuteAction = () => {
-    if (player) {
-      isMuted = !isMuted;
-    }
   };
 
   const navigateToWatchPage = () => {
@@ -95,13 +87,6 @@
       return;
     }
     favoriteList.addToFavorites(movie);
-  };
-
-  type Props = {
-    position: {
-      x: number;
-      y: number;
-    };
   };
 </script>
 
@@ -145,7 +130,7 @@
     </div>
     {#if trailerUrl && isHovered && isTrailerDisplayed}
       <div class="pointer-events-none relative aspect-video overflow-hidden">
-        <Player bind:this={player} videoId={trailerUrl} {isMuted} />
+        <VideoPlayer bind:this={player} videoId={trailerUrl} {isMuted} />
       </div>
     {:else if imageUrl && isHovered}
       <img
@@ -167,7 +152,6 @@
     onmouseenter={handleImageMouseEnterAction}
     class="flex items-center justify-between p-4"
   >
-    <!-- Action Buttons -->
     <div class="flex space-x-2">
       <button
         onclick={navigateToWatchPage}
@@ -200,7 +184,7 @@
       <ChevronDown class="h-6 w-6 cursor-pointer text-white" />
     </button>
   </div>
-  <!-- Movie Info -->
+
   <div class="p-4">
     <div class="flex gap-3">
       <span class="text-green-400">70% Match</span>
@@ -209,7 +193,7 @@
       <span class="rounded-sm border-2 border-gray-600 text-sm">HD</span>
     </div>
     <div class="mt-2 flex space-x-2 text-lg">
-      <span>Witty • Heartflet • Drama</span>
+      <span>Witty • Heartfelt • Drama</span>
     </div>
   </div>
 </div>
@@ -217,14 +201,11 @@
 <style>
   .popup-card {
     background-color: rgb(20, 20, 20);
-
     box-shadow:
       rgba(0, 0, 0, 0.2) 0px 2px 1px 1px,
       rgba(0, 0, 0, 0.14) 0px 1px 1px 0px,
       rgba(0, 0, 0, 0.12) 0px 1px 3px 1px;
-
     background-image: linear-gradient(rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.05));
-
     border-radius: 8px;
     transform-origin: center;
   }

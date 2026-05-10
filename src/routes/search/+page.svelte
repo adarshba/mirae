@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { PageProps } from './$types';
-  import Card from '$lib/components/Card.svelte';
+  import Thumbnail from '$components/Thumbnail.svelte';
 
   const { data }: PageProps = $props();
 </script>
@@ -13,7 +13,7 @@
   {:else}
     <div class="absolute left-12 flex flex-wrap gap-4">
       {#each data.searchResult as movie (movie.id)}
-        <Card {movie} />
+        <Thumbnail {movie} />
       {/each}
     </div>
   {/if}

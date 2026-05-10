@@ -1,5 +1,5 @@
 <script lang="ts">
-  import logo from '$lib/assets/Netflix-LOGO.png';
+  import logo from '$lib/assets/logo.svg';
   import profileImage from '$lib/assets/profile.jpg';
   import { scrollY } from 'svelte/reactivity/window';
   import Search from '@lucide/svelte/icons/search';
@@ -7,24 +7,23 @@
   import ChevronRight from '@lucide/svelte/icons/chevron-right';
   import Menu from '@lucide/svelte/icons/menu';
   import X from '@lucide/svelte/icons/x';
-  // import { Search, Bell, ChevronRight, Menu, X } from '@lucide/svelte'; (slow imports)
   import { goto } from '$app/navigation';
 
-  let isSearchActive: boolean = $state(false);
-  let isMenuOpen: boolean = $state(false);
+  let isSearchActive = $state(false);
+  let isMenuOpen = $state(false);
 
-  const isSticky: boolean = $derived((scrollY.current ?? 0) > 50);
+  const isSticky = $derived((scrollY.current ?? 0) > 50);
 
   let searchQuery = $state('');
 
-  const toggleSearch = (e: MouseEvent) => {
-    e.stopPropagation();
+  const toggleSearch = (event: MouseEvent) => {
+    event.stopPropagation();
     isSearchActive = !isSearchActive;
   };
 
-  const handleSearch = async (e: KeyboardEvent) => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
+  const handleSearch = async (event: KeyboardEvent) => {
+    if (event.key === 'Enter') {
+      event.preventDefault();
       const query = searchQuery.trim();
 
       if (query === '') return;
@@ -44,22 +43,19 @@
     isMenuOpen = false;
   };
 
-  const NavItems: NavItem[] = [
-    { name: 'Home', href: '/' },
-    { name: 'Tv Shows', href: '/' },
-    { name: 'Movies', href: '/' },
-    { name: 'New and Popular', href: '/' },
-    { name: 'My List', href: '/myList' },
-    { name: 'Browse By Languages', href: '/' }
-  ];
-
   type NavItem = {
     name: string;
     href: string;
   };
-  type MobileVerParam = {
-    mobile?: boolean;
-  };
+
+  const navItems: NavItem[] = [
+    { name: 'Home', href: '/' },
+    { name: 'K-Dramas', href: '/' },
+    { name: 'Trending', href: '/' },
+    { name: 'New Releases', href: '/' },
+    { name: 'My List', href: '/myList' },
+    { name: 'Browse by Genre', href: '/' }
+  ];
 </script>
 
 <header
@@ -74,7 +70,7 @@
   <div class="flex items-center justify-between">
     <div class="flex items-center gap-x-6 md:gap-x-8">
       <a href="/">
-        <img src={logo} alt="Netflix Logo" class="w-28" />
+        <img src={logo} alt="Mirae Logo" class="w-28" />
       </a>
       {@render Navbar()}
     </div>
@@ -86,9 +82,8 @@
       <ChevronRight size={24} color="white" />
 
       <button
-        id="ham-button"
         class="ml-4 focus:outline-none md:hidden"
-        aria-label="hamburger-button"
+        aria-label="Toggle menu"
         onclick={toggleMenu}
       >
         <Menu size={20} color="white" />
@@ -96,16 +91,11 @@
     </div>
   </div>
 
-  <div
-    id="mobile-menu"
-    class={['mobile-menu relative lg:hidden', { open: isMenuOpen }]}
-    role="presentation"
-  >
+  <div class={['mobile-menu relative lg:hidden', { open: isMenuOpen }]} role="presentation">
     <button class="absolute right-4" onclick={closeMenu}>
       <X size={24} color="white" />
     </button>
 
-    <!-- COPY PASTE DE SEARCH INPUT -->
     {@render searchInput({ mobile: true })}
     {@render Navbar({ mobile: true })}
   </div>
@@ -115,26 +105,25 @@
   {/if}
 </header>
 
-{#snippet Navbar({ mobile }: { mobile: boolean } = { mobile: false })}
+{#snippet Navbar({ mobile = false }: { mobile?: boolean } = { mobile: false })}
   {#if mobile}
     <nav class="space-x-4 text-sm md:hidden">
-      {#each NavItems as item}
+      {#each navItems as item, index (index)}
         <a href={item.href} class="hover:text-gray-300">{item.name}</a>
       {/each}
     </nav>
   {:else}
     <nav class="hidden space-x-4 text-sm md:flex">
-      {#each NavItems as item}
+      {#each navItems as item, index (index)}
         <a href={item.href} class="hover:text-gray-300">{item.name}</a>
       {/each}
     </nav>
   {/if}
 {/snippet}
 
-{#snippet searchInput({ mobile }: { mobile: boolean } = { mobile: false })}
+{#snippet searchInput({ mobile = false }: { mobile?: boolean } = { mobile: false })}
   {#if mobile}
     <div
-      id="search-bar"
       class={['search-container', { active: isSearchActive }]}
       role="presentation"
       onclick={toggleSearch}
@@ -147,15 +136,12 @@
         placeholder="Search"
         aria-label="Search"
         type="text"
-        name=""
-        id=""
         class="search-input"
         onkeydown={handleSearch}
       />
     </div>
   {:else}
     <div
-      id="search-bar"
       class={['search-container hidden md:flex', { active: isSearchActive }]}
       role="presentation"
       onclick={toggleSearch}
@@ -165,11 +151,9 @@
       </button>
       <input
         bind:value={searchQuery}
-        placeholder="Seach"
+        placeholder="Search K-dramas..."
         aria-label="Search"
         type="text"
-        name=""
-        id=""
         class="search-input"
         onkeydown={handleSearch}
       />
@@ -218,6 +202,7 @@
     justify-items: center;
     align-items: center;
   }
+
   .search-button:hover {
     background-color: rgba(255, 255, 255, 0.1);
   }
@@ -229,7 +214,7 @@
     right: 0;
     background-color: #000;
     padding: 1rem 2rem;
-    transition: trasnsoform 0.3s ease-in-out;
+    transition: transform 0.3s ease-in-out;
     transform: translateY(-100%);
     z-index: 60;
   }
@@ -237,6 +222,7 @@
   .mobile-menu.open {
     transform: translateY(0);
   }
+
   .mobile-menu a {
     display: block;
     padding: 0.5rem 0;

@@ -6,25 +6,33 @@
   import ThumbsUp from '@lucide/svelte/icons/thumbs-up';
   import Volume2 from '@lucide/svelte/icons/volume-2';
   import VolumeOff from '@lucide/svelte/icons/volume-off';
-  import Player from '$lib/components/Player.svelte';
-  import { convertMinsToHrs, handleNoImageError } from '$lib/helpers';
-  import { getModalContext } from '$lib/stores/ModalStore.svelte';
+  import VideoPlayer from '$components/VideoPlayer.svelte';
+  import { convertMinsToHrs } from '$utils/helpers';
+  import { getModalContext } from '$stores/ModalStore.svelte';
   import { browser } from '$app/environment';
-  import { getFavoritesContext } from '$lib/stores/favoriteListStore.svelte';
-  import SimilarMovieCard from './SimilarMovieCard.svelte';
+  import { getFavoritesContext } from '$stores/favoriteListStore.svelte';
+  import RelatedCard from '$components/RelatedCard.svelte';
 
   const modalContext = getModalContext();
   const { favorites, addToFavorites } = $derived(getFavoritesContext());
 
-  let animationClass = $derived.by(() => {
-    if (modalContext.isOpen) {
-      browser && (document.body.style.overflow = 'hidden');
-      return 'bounce-up';
+  $effect(() => {
+    if (browser) {
+      if (modalContext.isOpen) {
+        document.body.style.overflow = 'hidden';
+      } else {
+        document.body.style.overflow = '';
+      }
     }
-    return 'bounce-down';
+
+    return () => {
+      if (browser) {
+        document.body.style.overflow = '';
+      }
+    };
   });
 
-  const addedToFav: boolean = $derived(favorites.some((fav) => fav.id === modalContext.movieId));
+  const addedToFav = $derived(favorites.some((fav) => fav.id === modalContext.movieId));
   let isMuted = $state(true);
 
   const toggleMute = () => {
@@ -36,9 +44,9 @@
   <div class="overlay">
     <div
       role="presentation"
-      class={`modal-content w-[90%] md:w-[80%] lg:w-[50%] ${animationClass}`}
-      onclick={(e) => {
-        e.stopPropagation();
+      class="modal-content w-[90%] md:w-[80%] lg:w-[50%]"
+      onclick={(event) => {
+        event.stopPropagation();
       }}
     >
       <button class="close-button" onclick={modalContext.closeModal} aria-label="Close Modal">
@@ -48,7 +56,6 @@
       <div class="content">
         {#if modalContext.trailerId}
           <div class="pointer-events-none relative aspect-video overflow-hidden">
-            <!-- gradient overlay -->
             <div
               class="absolute inset-0 bottom-0 z-30 bg-linear-to-t from-[#141414] to-transparent"
             ></div>
@@ -89,8 +96,7 @@
                   </button>
                   <button
                     onclick={toggleMute}
-                    class="rounded-full border-2
-                  border-gray-700 p-3 transition-colors duration-200 hover:border-white"
+                    class="rounded-full border-2 border-gray-700 p-3 transition-colors duration-200 hover:border-white"
                   >
                     {#if isMuted}
                       <VolumeOff class="h-6 w-6 cursor-pointer text-white" />
@@ -102,15 +108,11 @@
               </div>
             </div>
             {#if modalContext.trailerId}
-              <Player videoId={modalContext.trailerId} {isMuted} />
+              <VideoPlayer videoId={modalContext.trailerId} {isMuted} />
             {:else}
               <div class="flex h-64 items-center justify-center bg-gray-800">
                 <p class="text-white">Video Unavailable...</p>
               </div>
-            {/if}
-
-            {#if modalContext.movieData}
-              <div class="pointer-events-auto absolute bottom-0 z-50 w-full px-12"></div>
             {/if}
           </div>
         {:else}
@@ -118,24 +120,24 @@
             <p class="text-white">Video not available for this movie...</p>
           </div>
         {/if}
-        <!-- Actual Movie Content -->
+
         <div class="relative px-6 pt-6 md:px-12">
           <div
             class="absolute inset-0 bottom-0 z-30 h-5 bg-linear-to-b from-[#141414] to-transparent"
           ></div>
           <div class="flex flex-col lg:flex-row">
             <div class="flex flex-1 items-center gap-3">
-              <span class="text-green-400"
-                >{modalContext.movieData?.vote_average
+              <span class="text-green-400">
+                {modalContext.movieData?.vote_average
                   ? `${(modalContext.movieData?.vote_average * 10).toFixed(0)}% Match`
                   : 'N/A'}
               </span>
-              <span class="rounded-sm border-2 border-gray-600 text-sm"
-                >{modalContext.movieData?.adult ? '18+' : '13+'}</span
-              >
+              <span class="rounded-sm border-2 border-gray-600 text-sm">
+                {modalContext.movieData?.adult ? '18+' : '13+'}
+              </span>
 
-              <span class="font-bold"
-                >{modalContext.movieData?.runtime
+              <span class="font-bold">
+                {modalContext.movieData?.runtime
                   ? convertMinsToHrs(modalContext.movieData.runtime)
                   : 'N/A'}
               </span>
@@ -144,7 +146,6 @@
             </div>
 
             <div class="flex-1 flex-col">
-              <!-- Genres -->
               <div class="flex lg:ml-40">
                 {#if Array.isArray(modalContext?.movieData?.genres) && modalContext.movieData.genres.length > 0}
                   <span class="font-semibold">Genre:&nbsp;</span>
@@ -156,7 +157,6 @@
                 {/if}
               </div>
 
-              <!-- Spoken Languages -->
               <div class="mt-2 flex lg:ml-40">
                 <span class="font-semibold">Available in: &nbsp;</span>
                 {#if Array.isArray(modalContext?.movieData?.spoken_languages) && modalContext.movieData.spoken_languages.length > 0}
@@ -170,14 +170,12 @@
             </div>
           </div>
 
-          <!-- Overview -->
           <div class="relative mt-2 w-full lg:w-1/2">
             <p>
-              {modalContext.movieData?.overview || 'No overview is avaiable for the movie.'}
+              {modalContext.movieData?.overview || 'No overview is available for the movie.'}
             </p>
           </div>
 
-          <!-- Similar Movies -->
           {#if modalContext.loadingSimilarMovies}
             <div class="mt-4">
               <p class="text-center">Loading Similar Movies...</p>
@@ -191,7 +189,7 @@
               <h1 class="my-4 text-2xl font-bold">More Like This</h1>
               <div class="flex flex-wrap justify-center gap-x-4 gap-y-8 sm:justify-between">
                 {#each modalContext.similarMovies.slice(0, 12) as similarMovie (similarMovie.id)}
-                  <SimilarMovieCard
+                  <RelatedCard
                     id={similarMovie.id}
                     title={similarMovie.title!}
                     description={similarMovie.overview!}
@@ -206,68 +204,6 @@
     </div>
   </div>
 {/if}
-
-{#snippet similarMoviesS(params: {
-  id: number;
-  title: string;
-  description: string;
-  duration?: string;
-  imageUrl: string;
-  match?: string;
-  rating?: string;
-})}
-  <div class="w-40 rounded-lg bg-[#181818] text-white shadow-md sm:w-48">
-    <div class="relative">
-      <img
-        src={params.imageUrl}
-        alt={params.title}
-        onerror={handleNoImageError}
-        class="h-40 w-full rounded-t-lg object-cover"
-      />
-
-      <div
-        class="absolute top-2 right-2 rounded-md bg-[#000000b3] px-2 py-0.5 text-sm font-semibold text-white"
-      >
-        {params.duration}
-      </div>
-
-      <div class="absolute inset-0 bg-linear-to-t from-[#141414] to-transparent"></div>
-
-      <h3 class="absolute bottom-0 left-2 mb-1.5 text-base font-semibold">{params.title}</h3>
-    </div>
-
-    <div class="p-3">
-      <div class="mb-1 flex flex-col text-sm">
-        <div class="flex justify-between">
-          <div class="flex flex-col items-center justify-between">
-            <div class="text-[#46d369]">
-              <span>{params.match}</span>
-            </div>
-            <div class="text-[#b3b3b3]">
-              <span class="mr-2 border border-[#b3b3b3] px-1">{params.rating}</span>
-              <span>2023</span>
-            </div>
-          </div>
-
-          <div>
-            <button
-              onclick={() => {
-                goto(`watch/${params.id}`);
-                modalContext.closeModal();
-              }}
-              class="rounded-full border-2 border-gray-700 p-3 transition-colors duration-200 hover:border-white"
-            >
-              <Play class="h-6 w-6 text-white" /></button
-            >
-          </div>
-        </div>
-      </div>
-      <p class="mb-3 text-xs leading-tight text-[#b3b3b3]">
-        {params.description.substring(0, 50) + '...'}
-      </p>
-    </div>
-  </div>
-{/snippet}
 
 <style>
   .overlay {
@@ -289,7 +225,6 @@
       rgba(0, 0, 0, 0.2) 0px 2px 1px 1px,
       rgba(0, 0, 0, 0.14) 0px 1px 1px 0px,
       rgba(0, 0, 0, 0.12) 0px 1px 3px 0px;
-
     background-image: linear-gradient(rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.05));
   }
 

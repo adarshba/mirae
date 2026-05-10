@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { onMount, untrack } from 'svelte';
   import type { Attachment } from 'svelte/attachments';
 
   type Props = {
@@ -63,7 +62,6 @@
     };
   };
 
-  // Detect changes to isMuted and update the player's muted state accordingly
   $effect(() => {
     if (player) {
       player.muted = isMuted;
@@ -93,9 +91,6 @@
 </div>
 
 <style>
-  /* src/lib/PlyrCustom.css */
-
-  /* Custom Plyr variables to style the player */
   :root {
     --plyr-color-main: #ff000078;
     --plyr-video-background: rgba(0, 0, 0, 1);
@@ -120,47 +115,4 @@
     --plyr-font-size-base: 16px;
     --plyr-font-weight-bold: 600;
   }
-  /*
-  .plyr--video {
-    height: 20px !important;
-  }
-  
-  .plyr__spinner {
-    border-top-color: var(--plyr-color-main);
-  }
-
-  .plyr__progress__filled {
-    background-color: var(--plyr-color-main);
-  }
-
-
-  .plyr__menu__container {
-    background-color: var(--plyr-menu-background);
-  }
-  .plyr__menu__item {
-    color: var(--plyr-menu-color);
-  }
-
-
-  .mute-button {
-   
-    width: 48px;
-    height: 48px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: background-color 0.3s ease;
-    cursor: pointer;
-  }
-
-  .mute-button:hover {
-    background-color: rgba(0, 0, 0, 0.7);
-  }
-
- 
-  .mute-button {
-    cursor: pointer;
-  }
-
-  */
 </style>

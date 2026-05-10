@@ -1,25 +1,22 @@
-import { createContext } from "svelte";
-import type { MovieStore } from "./MovieStore.svelte";
-import type { MeasureMemoryMode } from "vm";
+import { createContext } from 'svelte';
+import { SvelteMap } from 'svelte/reactivity';
 
 export class ModalStore implements ModalState {
   isOpen = $state(false);
-  trailerId = $state("");
+  trailerId = $state('');
   movieId = $state(0);
   similarMovies: Movie[] = $state([]);
   loading = $state(false);
   loadingSimilarMovies = $state(false);
   error: string | null = $state(null);
   movieData: MovieDetails | null = $state(null);
-  #movieCache = new Map<number, MovieDetails>();
-
+  #movieCache = new SvelteMap<number, MovieDetails>();
 
   openModal = (movieId: number, trailerUrl: string) => {
     this.loading = true;
 
     this.movieId = movieId;
     this.trailerId = trailerUrl;
-
 
     const movieInCache = this.#movieCache.get(movieId);
 
@@ -45,40 +42,35 @@ export class ModalStore implements ModalState {
     this.isOpen = false;
   };
 
-
   private async fetchMovieDetails(movieId: number): Promise<void> {
     try {
       const response = await fetch(`/api/movie/${movieId}`, {
-        method: "GET",
+        method: 'GET',
         headers: {
           'Content-Type': 'application/json'
         }
-      })
+      });
 
       if (!response.ok) {
-
-        const errData = await response.json()
+        const errData = await response.json();
         if (errData.error) {
-          this.error = errData.error || "Failed to fetch the movie data..."
+          this.error = errData.error || 'Failed to fetch the movie data...';
         }
         this.movieData = null;
         return;
       }
 
-      const data = await response.json()
+      const data = await response.json();
 
-      const movieDataRes: MovieDetails = data.movieDetails
+      const movieDataRes: MovieDetails = data.movieDetails;
 
       if (movieDataRes) {
         this.movieData = movieDataRes;
-        this.#movieCache.set(movieId, movieDataRes)
+        this.#movieCache.set(movieId, movieDataRes);
       }
-
-    } catch (error) {
-      const err = error as Error
-
-      this.error = err.message ?? "Failed to fetch the movie data...";
-      this.movieData = null
+    } catch (err) {
+      this.error = err instanceof Error ? err.message : 'Failed to fetch the movie data...';
+      this.movieData = null;
     } finally {
       this.loading = false;
       this.isOpen = true;
@@ -99,7 +91,7 @@ export class ModalStore implements ModalState {
 
       const data = await response.json();
       this.similarMovies = (data.similarMovies as Movie[]) || [];
-    } catch (error) {
+    } catch {
       this.similarMovies = [];
     } finally {
       this.loadingSimilarMovies = false;

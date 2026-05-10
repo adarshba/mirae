@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 60">
+  <defs>
+    <linearGradient id="miraeGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#FF6B9D"/>
+      <stop offset="50%" style="stop-color:#C44569"/>
+      <stop offset="100%" style="stop-color:#786FA6"/>
+    </linearGradient>
+  </defs>
+  <text x="10" y="45" font-family="Georgia, serif" font-size="42" font-weight="bold" fill="url(#miraeGradient)">mirae</text>
+</svg>

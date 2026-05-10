@@ -1,7 +1,7 @@
 <script lang="ts">
   import ChevronLeft from '@lucide/svelte/icons/chevron-left';
   import ChevronRight from '@lucide/svelte/icons/chevron-right';
-  import Card from '$lib/components/Card.svelte';
+  import Thumbnail from '$components/Thumbnail.svelte';
 
   let { title = '', movies = [] }: Props = $props();
   let scrollAmount = $state(320);
@@ -51,7 +51,7 @@
     <div bind:this={carouselContainer} class="carousel-container" onscroll={handleScroll}>
       {#each movies as movie (movie.id)}
         <div class="carousel-item">
-          <Card {movie} />
+          <Thumbnail {movie} />
         </div>
       {/each}
     </div>

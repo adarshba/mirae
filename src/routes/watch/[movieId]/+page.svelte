@@ -1,7 +1,7 @@
 <script lang="ts">
   import { page } from '$app/state';
-  import Player from '$lib/components/Player.svelte';
-  import { getMovieCardContext } from '$lib/stores/MovieCardStore.svelte';
+  import VideoPlayer from '$components/VideoPlayer.svelte';
+  import { getMovieCardContext } from '$stores/MovieCardStore.svelte';
 
   const {
     params: { movieId }
@@ -44,7 +44,7 @@
           } else {
             error = 'No Trailer Found...';
           }
-        } catch (error) {
+        } catch {
           error = 'No Trailer Found...';
         } finally {
           loading = false;
@@ -58,7 +58,7 @@
   {#if loading}
     <p class="absolute top-28 left-12 w-full text-white">Loading Trailer...</p>
   {:else if videoId}
-    <Player {videoId} isMuted={false} showControls={true} />
+    <VideoPlayer {videoId} isMuted={false} showControls={true} />
   {:else if error}
     <p class="absolute top-28 left-12 w-full text-white">{error}</p>
   {:else}

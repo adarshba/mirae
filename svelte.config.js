@@ -1,27 +1,19 @@
 import adapter from 'svelte-adapter-bun';
-// import adapter from '@sveltejs/adapter-node';
 import { vitePreprocess } from '@sveltejs/vite-plugin-svelte';
 
 /** @type {import('@sveltejs/kit').Config} */
 const config = {
-	// Consult https://svelte.dev/docs/kit/integrations
-	// for more information about preprocessors
-	preprocess: vitePreprocess(),
-	kit: {
-		// adapter-auto only supports some environments, see https://svelte.dev/docs/kit/adapter-auto for a list.
-		// If your environment is not supported, or you settled on a specific environment, switch out the adapter.
-		// See https://svelte.dev/docs/kit/adapters for more information about adapters.
-		adapter: adapter()
-	},
-	vitePlugin: {
-
-		inspector: {
-
-			toggleKeyCombo: 'alt-i',
-			showToggleButton: 'always',
-			toggleButtonPos: 'bottom-right'
-		}
-	},
+  preprocess: vitePreprocess(),
+  kit: {
+    adapter: adapter(),
+    alias: {
+      $components: 'src/lib/components',
+      $stores: 'src/lib/stores',
+      $types: 'src/lib/types',
+      $api: 'src/lib/server/api',
+      $utils: 'src/lib'
+    }
+  }
 };
 
 export default config;
