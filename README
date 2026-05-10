@@ -1,0 +1,146 @@
+MIRAE
+
+未来 / 미래
+The future of streaming.
+
+
+
+WHAT IS MIRAE?
+
+Mirae is a modern Korean drama streaming platform built with:
+
+- SvelteKit
+- Bun
+- TypeScript
+- Tailwind CSS
+
+Focused on speed, immersion, and cinematic browsing,
+Mirae delivers a smooth OTT-style experience inspired by modern streaming platforms.
+
+
+
+FEATURES
+
+- cinematic homepage
+- responsive streaming UI
+- dynamic hero banners
+- TMDB powered discovery
+- hover preview effects
+- personalized recommendations
+- continue watching
+- watchlist system
+- smooth transitions
+- mobile-first design
+- fast navigation
+- dark UI aesthetics
+
+
+
+TECH STACK
+
+Frontend
+- SvelteKit
+- TypeScript
+- Tailwind CSS
+
+Runtime
+- Bun
+
+APIs
+- TMDB API
+- YouTube trailers
+
+Architecture
+- component-based structure
+- lazy-loaded media
+- optimized routing
+- edge-ready deployment
+
+
+
+PROJECT STRUCTURE
+
+src/
+├── lib/
+├── routes/
+├── components/
+├── stores/
+├── styles/
+└── utils/
+
+
+
+DEVELOPMENT
+
+Install dependencies:
+
+bun install
+
+Run development server:
+
+bun run dev
+
+
+
+BUILD
+
+Create production build:
+
+bun run build
+
+
+
+DESIGN PHILOSOPHY
+
+Mirae is built around three ideas:
+
+- speed
+- simplicity
+- immersion
+
+Minimal UI noise.
+Fast interactions.
+Cinematic presentation.
+
+
+
+FUTURE PLANS
+
+- AI recommendations
+- watch party support
+- subtitle customization
+- adaptive streaming
+- offline downloads
+- multilingual audio
+- recommendation engine
+- social profiles
+
+
+
+PAGES
+
+/home
+/browse
+/search
+/watch/:id
+/profile
+/my-list
+
+
+
+DISCLAIMER
+
+Mirae is a personal educational project created for learning,
+UI experimentation, and software engineering practice.
+
+All media metadata belongs to their respective owners.
+
+
+
+LICENSE
+
+MIT
+
+
+
+"The future of streaming."
