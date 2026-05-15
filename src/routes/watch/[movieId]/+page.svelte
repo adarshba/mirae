@@ -2,6 +2,7 @@
   import { page } from '$app/state';
   import VideoPlayer from '$components/VideoPlayer.svelte';
   import { getMovieCardContext } from '$stores/MovieCardStore.svelte';
+  import { fetchTrailer } from '$lib/helpers';
 
   const {
     params: { movieId }
@@ -26,28 +27,10 @@
         loading = true;
         error = '';
         videoId = null;
-        try {
-          const response = await fetch(`/api/trailer/${movieId}`, {
-            method: 'GET',
-            headers: {
-              'Content-Type': 'application/json'
-            }
-          });
-          if (!response.ok) {
-            throw new Error('Failed to fetch video trailer');
-          }
-          const data = await response.json();
-
-          if (data.trailer && data.trailer.key) {
-            videoId = data.trailer.key;
-          } else {
-            error = 'No Trailer Found...';
-          }
-        } catch {
-          error = 'No Trailer Found...';
-        } finally {
-          loading = false;
-        }
+        const key = await fetchTrailer(movieId);
+        if (key) videoId = key;
+        else error = 'No Trailer Found...';
+        loading = false;
       })();
     }
   });

@@ -2,6 +2,7 @@
   import { goto } from '$app/navigation';
   import { sendPasswordResetEmail } from 'firebase/auth';
   import { auth, authErrorMessage } from '$utils/firebase';
+  import { AUTH_REDIRECT_DELAY_MS } from '$lib/constants';
   import ChevronLeft from '@lucide/svelte/icons/chevron-left';
   import AuthCard from '$components/auth/AuthCard.svelte';
   import TextField from '$components/auth/TextField.svelte';
@@ -24,7 +25,10 @@
       await sendPasswordResetEmail(auth, normalized);
       loading = false;
       success = true;
-      setTimeout(() => goto(`/forgot/sent?e=${encodeURIComponent(normalized)}`), 700);
+      setTimeout(
+        () => goto(`/forgot/sent?e=${encodeURIComponent(normalized)}`),
+        AUTH_REDIRECT_DELAY_MS
+      );
     } catch (err) {
       loading = false;
       submitError = authErrorMessage(err);

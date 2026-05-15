@@ -103,7 +103,6 @@ type ModalState = {
   trailerId: string;
   movieData: MovieDetails | null;
   loading: boolean;
-  error: string | null;
   similarMovies: Movie[];
   loadingSimilarMovies: boolean;
 };

@@ -15,6 +15,7 @@
   import { DeviceStore, setDeviceContext } from '$stores/DeviceStore.svelte';
   import { page } from '$app/state';
   import { goto } from '$app/navigation';
+  import { AUTH_ROUTES, PROTECTED_ROUTES, HOVER_PREVIEW_Y_OFFSET_PX } from '$lib/constants';
 
   let { children }: LayoutProps = $props();
 
@@ -38,8 +39,6 @@
     deviceStore.loadForUser(authStore.user?.uid ?? null);
   });
 
-  const AUTH_ROUTES = ['/login', '/signup', '/forgot', '/reset'];
-  const PROTECTED_ROUTES = ['/account', '/myList', '/watch'];
   const isAuthRoute = $derived(AUTH_ROUTES.some((p) => page.url.pathname.startsWith(p)));
   const isProtectedRoute = $derived(PROTECTED_ROUTES.some((p) => page.url.pathname.startsWith(p)));
   const isMinimalLayout = $derived(isAuthRoute);
@@ -60,7 +59,9 @@
   <title>Mirae · K-Drama Streaming</title>
 </svelte:head>
 {#if !isMinimalLayout}
-  <HoverPreview position={{ x: cardStore.position.x, y: cardStore.position.y + 250 }} />
+  <HoverPreview
+    position={{ x: cardStore.position.x, y: cardStore.position.y + HOVER_PREVIEW_Y_OFFSET_PX }}
+  />
   <Navbar />
   <ShowDetails />
 {/if}

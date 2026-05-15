@@ -1,17 +1,17 @@
 import { env } from '$env/dynamic/private';
+import { TMDB_BASE_URL } from '$lib/constants';
+
 const { TMDB_API_KEY } = env;
 if (!TMDB_API_KEY) {
   throw new Error('TMDB_API_KEY is not defined in environment variables');
 }
-
-export const BASE_URL = 'https://api.themoviedb.org/3';
 
 export async function tmdbFetch<T>(
   endpoint: string,
   params: Record<string, string | number | boolean> = {},
   fetchFn: typeof fetch
 ): Promise<T | null> {
-  const url = new URL(`${BASE_URL}/${endpoint}`);
+  const url = new URL(`${TMDB_BASE_URL}/${endpoint}`);
 
   url.searchParams.append('api_key', TMDB_API_KEY!);
 

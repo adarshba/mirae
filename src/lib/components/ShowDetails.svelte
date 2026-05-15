@@ -8,7 +8,13 @@
   import VolumeOff from '@lucide/svelte/icons/volume-off';
   import X from '@lucide/svelte/icons/x';
   import VideoPlayer from '$components/VideoPlayer.svelte';
-  import { convertMinsToHrs } from '$utils/helpers';
+  import {
+    convertMinsToHrs,
+    tmdbBackdrop,
+    tmdbPoster,
+    matchPercent,
+    releaseYear
+  } from '$utils/helpers';
   import { getModalContext } from '$stores/ModalStore.svelte';
   import { browser } from '$app/environment';
   import { getFavoritesContext } from '$stores/favoriteListStore.svelte';
@@ -20,9 +26,13 @@
   let isMuted = $state(true);
 
   const data = $derived(modalContext.movieData);
-  const matchPct = $derived(data?.vote_average ? Math.round(data.vote_average * 10) : 0);
-  const year = $derived(data?.release_date?.slice(0, 4) ?? '');
+  const matchPct = $derived(matchPercent(data?.vote_average));
+  const year = $derived(releaseYear(data?.release_date));
   const addedToFav = $derived(favorites.some((fav) => fav.id === modalContext.movieId));
+  // FIXME: the "Add to list" button below always calls addToFavorites, so clicking
+  // when addedToFav is true creates a duplicate. Should branch on addedToFav and
+  // call favorites.removeFromFavorites instead — see HoverPreview.svelte for the
+  // correct toggle pattern.
 
   $effect(() => {
     if (!browser) return;
@@ -69,7 +79,7 @@
         {:else if data?.backdrop_path}
           <img
             class="h-full w-full object-cover"
-            src={`https://image.tmdb.org/t/p/original${data.backdrop_path}`}
+            src={tmdbBackdrop(data.backdrop_path)}
             alt={data?.title ?? ''}
           />
         {:else}
@@ -195,7 +205,7 @@
                   id={similarMovie.id}
                   title={similarMovie.title!}
                   description={similarMovie.overview!}
-                  imageUrl={`https://image.tmdb.org/t/p/w500${similarMovie.backdrop_path}`}
+                  imageUrl={tmdbPoster(similarMovie.backdrop_path)}
                 />
               {/each}
             </div>

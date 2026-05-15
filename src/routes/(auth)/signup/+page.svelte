@@ -2,6 +2,7 @@
   import { goto } from '$app/navigation';
   import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
   import { auth, authErrorMessage } from '$utils/firebase';
+  import { AUTH_REDIRECT_DELAY_MS } from '$lib/constants';
   import AuthCard from '$components/auth/AuthCard.svelte';
   import TextField from '$components/auth/TextField.svelte';
   import PasswordField from '$components/auth/PasswordField.svelte';
@@ -28,7 +29,7 @@
       }
       loading = false;
       success = true;
-      setTimeout(() => goto('/'), 700);
+      setTimeout(() => goto('/'), AUTH_REDIRECT_DELAY_MS);
     } catch (err) {
       loading = false;
       submitError = authErrorMessage(err);

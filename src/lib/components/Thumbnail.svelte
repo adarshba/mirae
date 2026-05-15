@@ -1,5 +1,6 @@
 <script lang="ts">
-  import { fetchTrailer, handleNoImageError } from '$utils/helpers';
+  import { fetchTrailer, handleNoImageError, tmdbPoster } from '$utils/helpers';
+  import { HOVER_DELAY_MS } from '$lib/constants';
   import { getMovieCardContext } from '$stores/MovieCardStore.svelte';
   import { getModalContext } from '$stores/ModalStore.svelte';
   import { getAuthContext } from '$stores/AuthStore.svelte';
@@ -10,7 +11,6 @@
   const authStore = getAuthContext();
   const isInteractive = $derived(!!authStore.user);
 
-  const HOVER_DELAY_MS = 400;
   let hoverTimer: ReturnType<typeof setTimeout> | null = null;
 
   const clearHoverTimer = () => {
@@ -48,13 +48,7 @@
     modalContext.openModal(movie.id, trailer);
   };
 
-  const imageSrc = $derived(
-    movie.backdrop_path
-      ? `https://image.tmdb.org/t/p/w500${movie.backdrop_path}`
-      : movie.poster_path
-        ? `https://image.tmdb.org/t/p/w500${movie.poster_path}`
-        : ''
-  );
+  const imageSrc = $derived(tmdbPoster(movie.backdrop_path ?? movie.poster_path));
 </script>
 
 {#if imageSrc}

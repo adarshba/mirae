@@ -9,6 +9,7 @@
   import { getAuthContext } from '$stores/AuthStore.svelte';
   import Avatar from '$components/profile/Avatar.svelte';
   import ProfileDropdown from '$components/profile/ProfileDropdown.svelte';
+  import { NAVBAR_STICKY_SCROLL_PX } from '$lib/constants';
 
   let isSearchActive = $state(false);
   let isMenuOpen = $state(false);
@@ -19,7 +20,7 @@
 
   const authStore = getAuthContext();
 
-  const isSticky = $derived((scrollY.current ?? 0) > 30);
+  const isSticky = $derived((scrollY.current ?? 0) > NAVBAR_STICKY_SCROLL_PX);
 
   type NavItem = { name: string; href: string };
   const navItems = $derived<NavItem[]>(

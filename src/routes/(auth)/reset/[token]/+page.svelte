@@ -4,6 +4,7 @@
   import { page } from '$app/state';
   import { confirmPasswordReset, verifyPasswordResetCode } from 'firebase/auth';
   import { auth, authErrorMessage } from '$utils/firebase';
+  import { AUTH_REDIRECT_DELAY_MS } from '$lib/constants';
   import AuthCard from '$components/auth/AuthCard.svelte';
   import PasswordField from '$components/auth/PasswordField.svelte';
   import PrimaryButton from '$components/auth/PrimaryButton.svelte';
@@ -13,6 +14,9 @@
 
   let newPassword = $state('');
   let confirmPassword = $state('');
+  // TODO: the "Sign out of other devices" checkbox below is wired to this state
+  // but the submit handler never reads it. Either remove the control or call
+  // `getAuth().currentUser?.getIdToken(true)` + admin SDK revocation on submit.
   let signOutOthers = $state(true);
   let loading = $state(false);
   let success = $state(false);
@@ -46,7 +50,7 @@
       await confirmPasswordReset(auth, oobCode, newPassword);
       loading = false;
       success = true;
-      setTimeout(() => goto('/login?reset=ok'), 700);
+      setTimeout(() => goto('/login?reset=ok'), AUTH_REDIRECT_DELAY_MS);
     } catch (err) {
       loading = false;
       submitError = authErrorMessage(err);

@@ -8,7 +8,6 @@ export class ModalStore implements ModalState {
   similarMovies: Movie[] = $state([]);
   loading = $state(false);
   loadingSimilarMovies = $state(false);
-  error: string | null = $state(null);
   movieData: MovieDetails | null = $state(null);
   #movieCache = new SvelteMap<number, MovieDetails>();
 
@@ -37,7 +36,6 @@ export class ModalStore implements ModalState {
 
     this.movieId = 0;
     this.trailerId = '';
-    this.error = null;
     this.movieData = null;
     this.isOpen = false;
   };
@@ -52,24 +50,18 @@ export class ModalStore implements ModalState {
       });
 
       if (!response.ok) {
-        const errData = await response.json();
-        if (errData.error) {
-          this.error = errData.error || 'Failed to fetch the movie data...';
-        }
         this.movieData = null;
         return;
       }
 
       const data = await response.json();
-
       const movieDataRes: MovieDetails = data.movieDetails;
 
       if (movieDataRes) {
         this.movieData = movieDataRes;
         this.#movieCache.set(movieId, movieDataRes);
       }
-    } catch (err) {
-      this.error = err instanceof Error ? err.message : 'Failed to fetch the movie data...';
+    } catch {
       this.movieData = null;
     } finally {
       this.loading = false;

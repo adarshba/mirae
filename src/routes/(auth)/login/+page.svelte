@@ -8,6 +8,7 @@
     signInWithEmailAndPassword
   } from 'firebase/auth';
   import { auth, authErrorMessage } from '$utils/firebase';
+  import { AUTH_REDIRECT_DELAY_MS } from '$lib/constants';
   import AuthCard from '$components/auth/AuthCard.svelte';
   import TextField from '$components/auth/TextField.svelte';
   import PasswordField from '$components/auth/PasswordField.svelte';
@@ -42,7 +43,7 @@
       setTimeout(() => {
         const next = page.url.searchParams.get('from') ?? '/';
         goto(next);
-      }, 700);
+      }, AUTH_REDIRECT_DELAY_MS);
     } catch (err) {
       loading = false;
       submitError = authErrorMessage(err);

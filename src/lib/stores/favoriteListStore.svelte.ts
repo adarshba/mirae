@@ -1,8 +1,9 @@
 import { browser } from '$app/environment';
 import { createContext } from 'svelte';
+import { STORAGE_KEYS } from '$lib/constants';
 
 export const createFavoriteListStore = () => {
-  const key = 'favorites';
+  const key = STORAGE_KEYS.favorites;
   let favorites: Movie[] = $state([]);
 
   if (browser) {

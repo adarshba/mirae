@@ -1,7 +1,8 @@
 import { browser } from '$app/environment';
 import { createContext } from 'svelte';
+import { STORAGE_KEYS } from '$lib/constants';
 
-const STORAGE_PREFIX = 'mirae:devices:';
+const STORAGE_PREFIX = STORAGE_KEYS.devicesPrefix;
 
 const detectDeviceKind = (): DeviceKind => {
   if (!browser) return 'laptop';
@@ -101,12 +102,16 @@ export class DeviceStore {
     writeDevices(uid, $state.snapshot(this.devices) as TrackedDevice[]);
   }
 
+  // TODO: only updates the local device list; doesn't actually revoke the Firebase
+  // refresh token. Call `getAuth().revokeRefreshTokens(uid)` (admin) or rotate a
+  // per-device session claim before promoting this beyond demo UX.
   signOutDevice(uid: string, id: string) {
     if (!uid) return;
     this.devices = this.devices.filter((d) => d.id !== id);
     writeDevices(uid, $state.snapshot(this.devices) as TrackedDevice[]);
   }
 
+  // TODO: see signOutDevice — cosmetic only.
   signOutAll(uid: string) {
     if (!uid) return;
     this.devices = this.devices.filter((d) => d.id === this.currentDeviceId);

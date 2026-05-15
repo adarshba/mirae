@@ -1,5 +1,5 @@
 import { json } from '@sveltejs/kit';
-import { getSimiliarMovies } from '$api/catalog';
+import { getSimilarMovies } from '$api/catalog';
 import type { RequestHandler } from '@sveltejs/kit';
 
 export const GET: RequestHandler = async ({ params, fetch }) => {
@@ -15,7 +15,7 @@ export const GET: RequestHandler = async ({ params, fetch }) => {
   }
 
   try {
-    const similarMovies = await getSimiliarMovies(fetch, id);
+    const similarMovies = await getSimilarMovies(fetch, id);
     return json(
       { similarMovies },
       {

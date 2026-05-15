@@ -1,17 +1,4 @@
-import { BASE_URL, tmdbFetch } from './tmdb-client';
-import { env } from '$env/dynamic/private';
-const { TMDB_API_KEY } = env;
-if (!TMDB_API_KEY) {
-  throw new Error('TMDB_API_KEY is not defined in environment variables');
-}
-
-const handleFetchResponse = async (response: Response) => {
-  if (!response.ok) {
-    const errorData = await response.json();
-    throw new Error(`HTTP error! status: ${response.status}, data: ${JSON.stringify(errorData)}`);
-  }
-  return response.json();
-};
+import { tmdbFetch } from './tmdb-client';
 
 const KOREAN_FILTER = {
   with_original_language: 'ko',
@@ -72,41 +59,32 @@ export const getMoviesByGenre = (fetchFn: typeof fetch, id: number | string) =>
 
 export const getGenres = async (fetchFn: typeof fetch): Promise<Genre[] | null> => {
   const data = await tmdbFetch<{ genres: Genre[] }>('genre/movie/list', {}, fetchFn);
-  return data?.genres || null;
+  return data?.genres ?? null;
 };
 
-export const getMovieTrailer = async (movieId: number): Promise<Trailer> => {
-  const response = await fetch(`${BASE_URL}/movie/${movieId}/videos?api_key=${TMDB_API_KEY}`);
-  const data = await handleFetchResponse(response);
-
-  const trailer = data?.results.find(
-    (video: { type: string; site: string; key: string; name: string }) =>
-      video.type === 'Trailer' && video.site === 'YouTube'
-  );
-
-  if (!trailer) {
-    throw new Error('No trailer found');
-  }
-  return trailer;
+export const getMovieTrailer = async (
+  movieId: number,
+  fetchFn: typeof fetch
+): Promise<Trailer | null> => {
+  const data = await tmdbFetch<TMDBResponse<Trailer>>(`movie/${movieId}/videos`, {}, fetchFn);
+  return data?.results.find((v) => v.type === 'Trailer' && v.site === 'YouTube') ?? null;
 };
 
-export const getMovieById = async (
-  fetchFn: typeof fetch,
-  movieId: string
-): Promise<MovieDetails | null> => {
-  const response = await fetchFn(`${BASE_URL}/movie/${movieId}?api_key=${TMDB_API_KEY}`);
-  return handleFetchResponse(response);
-};
+export const getMovieById = (fetchFn: typeof fetch, movieId: string) =>
+  tmdbFetch<MovieDetails>(`movie/${movieId}`, {}, fetchFn);
 
-export const getSimiliarMovies = async (
+export const getSimilarMovies = async (
   fetchFn: typeof fetch,
   movieId: string
 ): Promise<Movie[]> => {
-  const response = await fetchFn(`${BASE_URL}/movie/${movieId}/similar?api_key=${TMDB_API_KEY}`);
-  const data = await handleFetchResponse(response);
-  return (data?.results as Movie[]) || [];
+  const data = await tmdbFetch<TMDBResponse<Movie>>(`movie/${movieId}/similar`, {}, fetchFn);
+  return data?.results ?? [];
 };
 
+// TODO: TMDB pagination is broken once we post-filter by `original_language === 'ko'` —
+// some pages return zero results even when more pages exist. Either switch fully to
+// discover/movie with `with_original_language=ko` + free-text genre matching, or
+// fetch multiple pages until N results are accumulated.
 export const searchMovies = async ({
   fetchFn,
   searchQuery,
@@ -116,9 +94,7 @@ export const searchMovies = async ({
   searchQuery: string;
   page: number;
 }): Promise<Movie[]> => {
-  if (!searchQuery.trim()) {
-    return [];
-  }
+  if (!searchQuery.trim()) return [];
 
   const results = await fetchMovieList('search/movie', fetchFn, {
     query: searchQuery.trim(),

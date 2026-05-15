@@ -7,7 +7,13 @@
   import Volume2 from '@lucide/svelte/icons/volume-2';
   import VolumeOff from '@lucide/svelte/icons/volume-off';
   import VideoPlayer from '$components/VideoPlayer.svelte';
-  import { fetchTrailer, handleNoImageError } from '$utils/helpers';
+  import {
+    fetchTrailer,
+    handleNoImageError,
+    tmdbPoster,
+    matchPercent,
+    releaseYear
+  } from '$utils/helpers';
   import { getMovieCardContext } from '$stores/MovieCardStore.svelte';
   import { goto } from '$app/navigation';
   import { getFavoritesContext } from '$stores/favoriteListStore.svelte';
@@ -26,18 +32,10 @@
   const movie = $derived(cardStore.movie);
   const isHovered = $derived(cardStore.isHovered);
   const title = $derived(movie?.title ?? '');
-  const imageUrl = $derived(
-    movie?.backdrop_path
-      ? `https://image.tmdb.org/t/p/w500${movie.backdrop_path}`
-      : movie?.poster_path
-        ? `https://image.tmdb.org/t/p/w500${movie.poster_path}`
-        : ''
-  );
+  const imageUrl = $derived(tmdbPoster(movie?.backdrop_path ?? movie?.poster_path));
   const movieId = $derived(movie?.id ?? -1);
-  const matchPct = $derived(
-    movie?.vote_average ? Math.round((movie.vote_average as number) * 10) : 0
-  );
-  const year = $derived(movie?.release_date?.slice(0, 4) ?? '');
+  const matchPct = $derived(matchPercent(movie?.vote_average));
+  const year = $derived(releaseYear(movie?.release_date));
   const addedToFavorites = $derived(favoriteList.favorites.some((fav) => fav.id === movie?.id));
 
   const edgePadding = 220;

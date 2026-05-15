@@ -6,7 +6,7 @@
   import VolumeOff from '@lucide/svelte/icons/volume-off';
   import { getMoviesContext } from '$stores/MovieStore.svelte';
   import { goto } from '$app/navigation';
-  import { fetchTrailer } from '$utils/helpers';
+  import { fetchTrailer, tmdbBackdrop, matchPercent, releaseYear } from '$utils/helpers';
   import VideoPlayer from '$components/VideoPlayer.svelte';
   import { getFavoritesContext } from '$stores/favoriteListStore.svelte';
   import { getAuthContext } from '$stores/AuthStore.svelte';
@@ -29,9 +29,8 @@
     goto(`/watch/${selectedMovie.id}`);
   };
 
-  const year = $derived(selectedMovie?.release_date?.slice(0, 4) ?? '');
-  const rating = $derived(selectedMovie?.vote_average ?? 0);
-  const matchPct = $derived(rating > 0 ? Math.round(rating * 10) : 0);
+  const year = $derived(releaseYear(selectedMovie?.release_date));
+  const matchPct = $derived(matchPercent(selectedMovie?.vote_average));
   const isListed = $derived(
     !!selectedMovie && favorites.favorites.some((m) => m.id === selectedMovie.id)
   );
@@ -68,7 +67,7 @@
     {#if selectedMovie?.backdrop_path}
       <img
         class="h-full w-full object-cover"
-        src={`https://image.tmdb.org/t/p/original${selectedMovie.backdrop_path}`}
+        src={tmdbBackdrop(selectedMovie.backdrop_path)}
         alt={selectedMovie.title ?? ''}
       />
     {/if}
