@@ -70,14 +70,13 @@
 </script>
 
 <div
-  class={[
-    { 'flex h-screen items-center justify-center': showControls, 'h-full': !showControls },
-    'relative overflow-hidden bg-black shadow-lg'
-  ]}
+  class="shadow-card relative overflow-hidden bg-black {showControls
+    ? 'flex h-screen items-center justify-center'
+    : ''}"
 >
   <div
     class={showControls
-      ? 'flex aspect-video w-[90%] scale-[1.4] justify-center'
+      ? 'static flex aspect-video w-[90%] justify-center'
       : 'absolute inset-0 scale-[1.4]'}
   >
     <div
@@ -91,8 +90,8 @@
 </div>
 
 <style>
-  :root {
-    --plyr-color-main: #ff000078;
+  :global(:root) {
+    --plyr-color-main: var(--color-brand);
     --plyr-video-background: rgba(0, 0, 0, 1);
     --plyr-focus-visible-color: #00b3ff;
     --plyr-badge-background: #4a5464;
@@ -102,10 +101,10 @@
     --plyr-control-icon-size: 24px;
     --plyr-control-spacing: 12px;
     --plyr-control-radius: 6px;
-    --plyr-control-toggle-checked-background: #ff0000;
+    --plyr-control-toggle-checked-background: var(--color-brand);
     --plyr-video-controls-background: linear-gradient(rgba(0, 0, 0, 0), rgba(0, 0, 0, 0.85));
     --plyr-video-control-color: #6d6d6d;
-    --plyr-video-control-color-hover: #ff0000;
+    --plyr-video-control-color-hover: var(--color-brand);
     --plyr-video-control-background-hover: #ffffff;
     --plyr-menu-background: rgba(255, 255, 255, 0.9);
     --plyr-menu-color: #000000;

@@ -1,60 +1,90 @@
 <script lang="ts">
-  import { handleNoImageError } from '$utils/helpers';
+  import { fetchTrailer, handleNoImageError } from '$utils/helpers';
   import { getMovieCardContext } from '$stores/MovieCardStore.svelte';
+  import { getModalContext } from '$stores/ModalStore.svelte';
+  import { getAuthContext } from '$stores/AuthStore.svelte';
 
-  const { movie }: Props = $props();
+  const { movie }: { movie: Movie } = $props();
   const cardStore = getMovieCardContext();
+  const modalContext = getModalContext();
+  const authStore = getAuthContext();
+  const isInteractive = $derived(!!authStore.user);
+
+  const HOVER_DELAY_MS = 400;
+  let hoverTimer: ReturnType<typeof setTimeout> | null = null;
+
+  const clearHoverTimer = () => {
+    if (hoverTimer) {
+      clearTimeout(hoverTimer);
+      hoverTimer = null;
+    }
+  };
 
   const showPopover = (e: MouseEvent) => {
     const cardElement = e.currentTarget as HTMLElement;
-    const cardRect = cardElement.getBoundingClientRect();
-
-    if (cardStore.isHovered && cardStore.cardId === movie.id) {
-      return;
-    }
-    cardStore.isHovered = true;
-    cardStore.movie = movie;
-    cardStore.cardId = movie.id;
-    cardStore.position = {
-      x: cardRect.left + cardRect.width / 2,
-      y: cardRect.top
-    };
+    clearHoverTimer();
+    if (cardStore.isHovered && cardStore.cardId === movie.id) return;
+    hoverTimer = setTimeout(() => {
+      const cardRect = cardElement.getBoundingClientRect();
+      cardStore.isHovered = true;
+      cardStore.movie = movie;
+      cardStore.cardId = movie.id;
+      cardStore.position = {
+        x: cardRect.left + cardRect.width / 2,
+        y: cardRect.top
+      };
+    }, HOVER_DELAY_MS);
   };
 
   const hidePopover = () => {
+    clearHoverTimer();
     cardStore.isHovered = false;
   };
 
-  type Props = {
-    movie: Movie;
+  const openDetails = async () => {
+    clearHoverTimer();
+    cardStore.isHovered = false;
+    const trailer = await fetchTrailer(movie.id.toString());
+    modalContext.openModal(movie.id, trailer);
   };
+
+  const imageSrc = $derived(
+    movie.backdrop_path
+      ? `https://image.tmdb.org/t/p/w500${movie.backdrop_path}`
+      : movie.poster_path
+        ? `https://image.tmdb.org/t/p/w500${movie.poster_path}`
+        : ''
+  );
 </script>
 
-{#if movie.backdrop_path}
-  <div
-    role="presentation"
-    onmouseleave={hidePopover}
-    onmouseenter={showPopover}
-    class="card pointer-events-auto relative w-36 sm:w-56"
+{#if imageSrc}
+  <button
+    type="button"
+    disabled={!isInteractive}
+    class="group pointer-events-auto relative w-full border-0 bg-transparent p-0 text-left text-inherit transition-transform duration-(--duration-fast,150ms) ease-(--ease-standard) {isInteractive
+      ? 'cursor-pointer hover:-translate-y-0.5'
+      : 'cursor-default'}"
+    onmouseenter={isInteractive ? showPopover : undefined}
+    onmouseleave={isInteractive ? hidePopover : undefined}
+    onclick={isInteractive ? openDetails : undefined}
   >
-    <img
-      onerror={handleNoImageError}
-      src={`https://image.tmdb.org/t/p/w300${movie.backdrop_path}`}
-      alt={movie.title}
-    />
-  </div>
+    <div
+      class="relative aspect-video w-full overflow-hidden rounded-md bg-[color:var(--bg-elevated)] shadow-[var(--shadow-sm)]"
+    >
+      <img
+        class="block h-full w-full object-cover transition-transform duration-(--duration-base,300ms) ease-(--ease-standard) {isInteractive
+          ? 'group-hover:scale-[1.04]'
+          : ''}"
+        onerror={handleNoImageError}
+        src={imageSrc}
+        alt={movie.title ?? ''}
+        loading="lazy"
+      />
+    </div>
+    {#if movie.title}
+      <p class="mt-2 mb-0 truncate text-[0.875rem] font-medium text-[color:var(--text-secondary)]">
+        {movie.title}
+      </p>
+    {/if}
+  </button>
 {/if}
-
-<style>
-  .card {
-    cursor: pointer;
-    color: white;
-    opacity: 1;
-    position: relative;
-  }
-
-  .card img {
-    width: 100%;
-    display: block;
-  }
-</style>

@@ -76,14 +76,14 @@ bun run dev
 
 COMMANDS
 
-bun dev              Start development server
-bun build            Create production build
-bun start            Run production server
-bun preview          Preview production build
-bun check            Type-check Svelte
-bun check:watch      Type-check in watch mode
-bun lint             Run ESLint and Prettier checks
-bun format           Format code with Prettier
+bun dev Start development server
+bun build Create production build
+bun start Run production server
+bun preview Preview production build
+bun check Type-check Svelte
+bun check:watch Type-check in watch mode
+bun lint Run ESLint and Prettier checks
+bun format Format code with Prettier
 
 DESIGN PHILOSOPHY
 

@@ -1,18 +1,24 @@
 import { createContext } from 'svelte';
+import { SvelteSet } from 'svelte/reactivity';
 
 export class MovieStore {
   popularMovies: Movie[] = $state([]);
   selectedMovie: MovieDetails | null = $state(null);
+  private tried = new SvelteSet<number>();
 
   constructor() {
     $effect(() => {
-      if (this.popularMovies.length === 0) {
-        return;
-      }
-
-      const randomIndex = Math.floor(Math.random() * this.popularMovies.length);
-      this.selectedMovie = this.popularMovies[randomIndex] as MovieDetails;
+      if (this.popularMovies.length === 0 || this.selectedMovie) return;
+      this.pickRandom();
     });
+  }
+
+  pickRandom() {
+    const pool = this.popularMovies.filter((m) => !this.tried.has(m.id));
+    if (pool.length === 0) return;
+    const pick = pool[Math.floor(Math.random() * pool.length)];
+    this.tried.add(pick.id);
+    this.selectedMovie = pick as MovieDetails;
   }
 }
 

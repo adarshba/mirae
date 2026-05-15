@@ -14,19 +14,36 @@
 
 <Billboard />
 
-<div class="absolute top-[35vh] flex w-full flex-col space-y-4 pl-10 md:top-[65vh] lg:top-[85vh]">
-  <ContentRow title="Popular K-Dramas" movies={data.popularMovies} />
+<section class="home-rows">
+  <ContentRow
+    title="Top 10 in Korea Today"
+    movies={data.trendingMovies.slice(0, 10)}
+    variant="top10"
+  />
   <ContentRow title="Trending Now" movies={data.trendingMovies} />
-  <ContentRow title="Top-Rated" movies={data.topRatedMovies} />
+  <ContentRow title="New on Mirae" movies={data.newReleases} />
+  <ContentRow title="Critically Acclaimed" movies={data.topRatedMovies} />
 
-  {#each data.moviesByGenre as { id, name: title, movies } (id)}
-    <ContentRow {title} {movies} />
+  {#each data.curatedRows as { id, name: title, movies } (id)}
+    {#if movies.length}
+      <ContentRow {title} {movies} />
+    {/if}
   {/each}
-</div>
+</section>
 
 <style>
-  :global(body) {
-    min-height: 200vh;
-    color: white;
+  .home-rows {
+    position: relative;
+    z-index: var(--z-base);
+    display: flex;
+    flex-direction: column;
+    margin-top: -8vh;
+    padding-bottom: var(--space-12);
+  }
+
+  @media (min-width: 768px) {
+    .home-rows {
+      margin-top: -12vh;
+    }
   }
 </style>

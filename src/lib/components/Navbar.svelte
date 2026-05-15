@@ -1,253 +1,200 @@
 <script lang="ts">
   import logo from '$lib/assets/logo.svg';
-  import profileImage from '$lib/assets/profile.jpg';
   import { scrollY } from 'svelte/reactivity/window';
   import Search from '@lucide/svelte/icons/search';
-  import Bell from '@lucide/svelte/icons/bell';
-  import ChevronRight from '@lucide/svelte/icons/chevron-right';
+  import ChevronDown from '@lucide/svelte/icons/chevron-down';
   import Menu from '@lucide/svelte/icons/menu';
   import X from '@lucide/svelte/icons/x';
   import { goto } from '$app/navigation';
+  import { getAuthContext } from '$stores/AuthStore.svelte';
+  import Avatar from '$components/profile/Avatar.svelte';
+  import ProfileDropdown from '$components/profile/ProfileDropdown.svelte';
 
   let isSearchActive = $state(false);
   let isMenuOpen = $state(false);
-
-  const isSticky = $derived((scrollY.current ?? 0) > 50);
-
+  let isProfileOpen = $state(false);
   let searchQuery = $state('');
+  let searchInputEl = $state<HTMLInputElement | null>(null);
+  let profileChipEl = $state<HTMLDivElement | null>(null);
 
-  const toggleSearch = (event: MouseEvent) => {
-    event.stopPropagation();
-    isSearchActive = !isSearchActive;
+  const authStore = getAuthContext();
+
+  const isSticky = $derived((scrollY.current ?? 0) > 30);
+
+  type NavItem = { name: string; href: string };
+  const navItems = $derived<NavItem[]>(
+    authStore.user ? [{ name: 'My List', href: '/myList' }] : []
+  );
+
+  const activateSearch = () => {
+    isSearchActive = true;
+    queueMicrotask(() => searchInputEl?.focus());
   };
 
-  const handleSearch = async (event: KeyboardEvent) => {
-    if (event.key === 'Enter') {
-      event.preventDefault();
-      const query = searchQuery.trim();
+  const deactivateSearch = () => {
+    if (!searchQuery) isSearchActive = false;
+  };
 
-      if (query === '') return;
-
-      await goto(`/search?query=${encodeURIComponent(query)}`);
-
-      isSearchActive = false;
+  const submitSearch = async (event: KeyboardEvent) => {
+    if (event.key === 'Escape') {
       searchQuery = '';
+      isSearchActive = false;
+      return;
+    }
+    if (event.key !== 'Enter') return;
+    event.preventDefault();
+    const query = searchQuery.trim();
+    if (!query) return;
+    await goto(`/search?query=${encodeURIComponent(query)}`);
+    isSearchActive = false;
+    searchQuery = '';
+  };
+
+  const toggleMenu = () => (isMenuOpen = !isMenuOpen);
+  const closeMenu = () => (isMenuOpen = false);
+  const toggleProfile = () => (isProfileOpen = !isProfileOpen);
+  const closeProfile = () => (isProfileOpen = false);
+
+  const handleDocumentClick = (e: MouseEvent) => {
+    if (!isProfileOpen) return;
+    if (profileChipEl && !profileChipEl.contains(e.target as Node)) {
+      isProfileOpen = false;
     }
   };
 
-  const toggleMenu = () => {
-    isMenuOpen = !isMenuOpen;
+  const handleKeydown = (e: KeyboardEvent) => {
+    if (e.key === 'Escape') isProfileOpen = false;
   };
 
-  const closeMenu = () => {
-    isMenuOpen = false;
-  };
-
-  type NavItem = {
-    name: string;
-    href: string;
-  };
-
-  const navItems: NavItem[] = [
-    { name: 'Home', href: '/' },
-    { name: 'K-Dramas', href: '/' },
-    { name: 'Trending', href: '/' },
-    { name: 'New Releases', href: '/' },
-    { name: 'My List', href: '/myList' },
-    { name: 'Browse by Genre', href: '/' }
-  ];
+  const iconBtn =
+    'inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-md border-0 bg-transparent text-[color:var(--text-primary)] transition-colors duration-(--duration-fast,150ms) ease-(--ease-standard) hover:bg-white/[0.08]';
 </script>
 
+<svelte:window onclick={handleDocumentClick} onkeydown={handleKeydown} />
+
 <header
-  class={[
-    'fixed top-0 right-0 left-0 z-50 flex flex-col px-5 text-white transition-all duration-300 ease-in-out md:px-10',
-    {
-      'bg-black shadow-lg': isSticky,
-      'bg-linear-to-b from-[rgba(0,0,0,0.7)] to-transparent': !isSticky
-    }
-  ]}
+  class="fixed top-0 right-0 left-0 z-[50] flex flex-col px-5 py-[1.125rem] text-[color:var(--text-primary)] transition-[background-color,backdrop-filter] duration-[220ms] ease-[ease] md:px-10 md:py-3 {isSticky
+    ? 'border-b border-white/[0.06] bg-[rgba(10,10,11,0.92)] backdrop-blur-[10px] backdrop-saturate-[150%] md:py-2'
+    : 'bg-[image:linear-gradient(180deg,rgba(10,10,11,0.75)_0%,transparent_100%)]'}"
 >
-  <div class="flex items-center justify-between">
-    <div class="flex items-center gap-x-6 md:gap-x-8">
-      <a href="/">
-        <img src={logo} alt="Mirae Logo" class="w-28" />
+  <div class="flex items-center justify-between gap-4">
+    <div class="flex items-center gap-6">
+      <a href="/" aria-label="Mirae home" class="block">
+        <img src={logo} alt="Mirae" class="block h-auto w-[8rem]" />
       </a>
-      {@render Navbar()}
+
+      <nav class="hidden gap-5 md:flex">
+        {#each navItems as item (item.name)}
+          <a
+            href={item.href}
+            class="relative cursor-pointer text-[0.875rem] font-medium tracking-[-0.005em] text-white no-underline transition-colors duration-(--duration-fast,150ms) ease-(--ease-standard) hover:underline"
+          >
+            {item.name}
+          </a>
+        {/each}
+      </nav>
     </div>
 
-    <div class="flex items-center space-x-4">
-      {@render searchInput()}
-      <Bell size={20} color="white" />
-      <img src={profileImage} class="h-8 w-8 cursor-pointer rounded" alt="Profile" />
-      <ChevronRight size={24} color="white" />
+    <div class="flex items-center gap-3">
+      <div
+        class="relative hidden h-9 items-center overflow-hidden rounded-md border bg-transparent transition-[width,background-color,border-color] duration-(--duration-base,300ms) ease-(--ease-standard) md:flex {isSearchActive
+          ? 'w-[17.5rem] border-white/25 bg-black/70'
+          : 'w-9 border-transparent hover:bg-white/[0.08]'}"
+      >
+        <button
+          type="button"
+          aria-label="Search"
+          onclick={activateSearch}
+          class="inline-flex h-9 w-9 flex-none cursor-pointer items-center justify-center border-0 bg-transparent text-[color:var(--text-primary)]"
+        >
+          <Search size={18} />
+        </button>
+        <input
+          bind:this={searchInputEl}
+          bind:value={searchQuery}
+          placeholder="Titles, genres, actors"
+          aria-label="Search Mirae"
+          type="text"
+          onkeydown={submitSearch}
+          onblur={deactivateSearch}
+          class="h-full min-w-0 flex-1 border-0 bg-transparent pr-3 text-[0.875rem] text-[color:var(--text-primary)] transition-opacity duration-(--duration-base,300ms) ease-(--ease-standard) outline-none placeholder:text-[color:var(--muted-foreground)] {isSearchActive
+            ? 'pointer-events-auto opacity-100'
+            : 'pointer-events-none opacity-0'}"
+        />
+      </div>
+
+      {#if authStore.user}
+        <div class="relative hidden md:inline-block" bind:this={profileChipEl}>
+          <button
+            type="button"
+            aria-label="Profile menu"
+            aria-haspopup="menu"
+            aria-expanded={isProfileOpen}
+            onclick={toggleProfile}
+            class="inline-flex cursor-pointer items-center gap-1.5 rounded-md border-0 bg-transparent py-1 pr-2 pl-1 text-[color:var(--text-primary)] transition-colors duration-(--duration-fast,150ms) ease-(--ease-standard) hover:bg-white/[0.06]"
+          >
+            <Avatar
+              name={authStore.user?.displayName}
+              email={authStore.user?.email}
+              seed={authStore.user?.uid}
+              size={30}
+            />
+            <ChevronDown size={14} class="opacity-75" />
+          </button>
+          {#if isProfileOpen}
+            <ProfileDropdown onClose={closeProfile} />
+          {/if}
+        </div>
+      {:else}
+        <a
+          href="/login"
+          class="bg-brand hidden cursor-pointer rounded-md px-4 py-1.5 text-[0.9375rem] font-semibold text-white no-underline transition-opacity duration-(--duration-fast,150ms) ease-(--ease-standard) hover:opacity-90 md:inline-flex"
+        >
+          Sign In
+        </a>
+      {/if}
 
       <button
-        class="ml-4 focus:outline-none md:hidden"
-        aria-label="Toggle menu"
+        type="button"
+        aria-label="Open menu"
         onclick={toggleMenu}
+        class="inline-flex h-9 w-9 cursor-pointer items-center justify-center border-0 bg-transparent text-[color:var(--text-primary)] md:hidden"
       >
-        <Menu size={20} color="white" />
+        <Menu size={20} />
       </button>
     </div>
   </div>
 
-  <div class={['mobile-menu relative lg:hidden', { open: isMenuOpen }]} role="presentation">
-    <button class="absolute right-4" onclick={closeMenu}>
-      <X size={24} color="white" />
-    </button>
-
-    {@render searchInput({ mobile: true })}
-    {@render Navbar({ mobile: true })}
+  <div
+    class="border-line fixed top-0 right-0 left-0 z-[49] border-b bg-[rgba(10,10,11,0.96)] px-5 py-4 backdrop-blur-[20px] transition-transform duration-(--duration-base,300ms) ease-(--ease-standard) {isMenuOpen
+      ? 'translate-y-0'
+      : '-translate-y-full'}"
+  >
+    <div class="mb-5 flex items-center justify-between">
+      <img src={logo} alt="Mirae" class="h-auto w-24" />
+      <button type="button" aria-label="Close menu" onclick={closeMenu} class={iconBtn}>
+        <X size={20} />
+      </button>
+    </div>
+    <nav class="flex flex-col gap-3">
+      {#each navItems as item (item.name)}
+        <a
+          href={item.href}
+          onclick={closeMenu}
+          class="py-2 text-[1.125rem] font-semibold text-[color:var(--text-primary)]"
+        >
+          {item.name}
+        </a>
+      {/each}
+    </nav>
   </div>
 
   {#if isMenuOpen}
-    <div class="overlay show" onclick={closeMenu} role="presentation"></div>
+    <button
+      type="button"
+      aria-label="Close menu"
+      onclick={closeMenu}
+      class="fixed inset-0 z-[48] cursor-pointer border-0 bg-[color:var(--bg-overlay-scrim)]"
+    ></button>
   {/if}
 </header>
-
-{#snippet Navbar({ mobile = false }: { mobile?: boolean } = { mobile: false })}
-  {#if mobile}
-    <nav class="space-x-4 text-sm md:hidden">
-      {#each navItems as item, index (index)}
-        <a href={item.href} class="hover:text-gray-300">{item.name}</a>
-      {/each}
-    </nav>
-  {:else}
-    <nav class="hidden space-x-4 text-sm md:flex">
-      {#each navItems as item, index (index)}
-        <a href={item.href} class="hover:text-gray-300">{item.name}</a>
-      {/each}
-    </nav>
-  {/if}
-{/snippet}
-
-{#snippet searchInput({ mobile = false }: { mobile?: boolean } = { mobile: false })}
-  {#if mobile}
-    <div
-      class={['search-container', { active: isSearchActive }]}
-      role="presentation"
-      onclick={toggleSearch}
-    >
-      <button class="search-button" aria-label="Toggle Search" onclick={toggleSearch}>
-        <Search size={20} color="white" />
-      </button>
-      <input
-        bind:value={searchQuery}
-        placeholder="Search"
-        aria-label="Search"
-        type="text"
-        class="search-input"
-        onkeydown={handleSearch}
-      />
-    </div>
-  {:else}
-    <div
-      class={['search-container hidden md:flex', { active: isSearchActive }]}
-      role="presentation"
-      onclick={toggleSearch}
-    >
-      <button class="search-button" aria-label="Toggle Search" onclick={toggleSearch}>
-        <Search size={20} color="white" />
-      </button>
-      <input
-        bind:value={searchQuery}
-        placeholder="Search K-dramas..."
-        aria-label="Search"
-        type="text"
-        class="search-input"
-        onkeydown={handleSearch}
-      />
-    </div>
-  {/if}
-{/snippet}
-
-<style>
-  .search-container {
-    position: relative;
-    align-items: center;
-    transition:
-      width 0.3s ease-in-out,
-      background-color 0.3s ease-in-out;
-    overflow: hidden;
-    width: 40px;
-  }
-
-  .search-container.active {
-    width: 200px;
-    border: 1px solid white;
-    background-color: black;
-  }
-
-  .search-input {
-    padding-left: 2rem;
-    flex: 1;
-    padding-block: 0.5rem;
-    background: transparent;
-    border: none;
-    outline: none;
-    opacity: 0;
-    color: white;
-    transition: opacity 0.3s ease-in-out;
-  }
-
-  .search-container.active .search-input {
-    opacity: 1;
-  }
-
-  .search-button {
-    position: absolute;
-    padding: 0.5rem;
-    cursor: pointer;
-    display: flex;
-    justify-items: center;
-    align-items: center;
-  }
-
-  .search-button:hover {
-    background-color: rgba(255, 255, 255, 0.1);
-  }
-
-  .mobile-menu {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    background-color: #000;
-    padding: 1rem 2rem;
-    transition: transform 0.3s ease-in-out;
-    transform: translateY(-100%);
-    z-index: 60;
-  }
-
-  .mobile-menu.open {
-    transform: translateY(0);
-  }
-
-  .mobile-menu a {
-    display: block;
-    padding: 0.5rem 0;
-    color: white;
-    text-decoration: none;
-    font-size: 1.1rem;
-  }
-
-  .overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background-color: rgba(0, 0, 0, 0.5);
-    opacity: 0;
-    visibility: hidden;
-    transition:
-      opacity 0.3s ease-in-out,
-      visibility 0.3s ease-in-out;
-    z-index: 55;
-  }
-
-  .overlay.show {
-    opacity: 1;
-    visibility: visible;
-  }
-</style>

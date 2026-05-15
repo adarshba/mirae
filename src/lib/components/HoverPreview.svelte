@@ -16,74 +16,79 @@
 
   let { position }: { position: PopupPosition } = $props();
 
-  let { movie, isHovered } = $derived(getMovieCardContext());
+  const cardStore = getMovieCardContext();
   const modalContext = getModalContext();
-
-  let isTrailerDisplayed = $state(false);
-  let trailerUrl = $state('');
-  let title = $derived(movie?.title ?? 'no title');
-  let imageUrl = $derived(`https://image.tmdb.org/t/p/w500${movie?.backdrop_path}`);
-  let movieId = $derived(movie?.id ?? -1);
   const favoriteList = getFavoritesContext();
-  const addedToFavorites = $derived(favoriteList.favorites.some((fav) => fav.id === movie?.id));
 
-  let player: ReturnType<typeof VideoPlayer> | null = $state(null);
+  let trailerUrl = $state('');
   let isMuted = $state(true);
 
+  const movie = $derived(cardStore.movie);
+  const isHovered = $derived(cardStore.isHovered);
+  const title = $derived(movie?.title ?? '');
+  const imageUrl = $derived(
+    movie?.backdrop_path
+      ? `https://image.tmdb.org/t/p/w500${movie.backdrop_path}`
+      : movie?.poster_path
+        ? `https://image.tmdb.org/t/p/w500${movie.poster_path}`
+        : ''
+  );
+  const movieId = $derived(movie?.id ?? -1);
+  const matchPct = $derived(
+    movie?.vote_average ? Math.round((movie.vote_average as number) * 10) : 0
+  );
+  const year = $derived(movie?.release_date?.slice(0, 4) ?? '');
+  const addedToFavorites = $derived(favoriteList.favorites.some((fav) => fav.id === movie?.id));
+
+  const edgePadding = 220;
+  const popupAlign = $derived.by(() => {
+    if (typeof window === 'undefined') return 'center';
+    if (position.x < edgePadding) return 'left';
+    if (window.innerWidth - position.x < edgePadding) return 'right';
+    return 'center';
+  });
+  const popupX = $derived.by(() => {
+    if (typeof window === 'undefined') return position.x;
+    if (popupAlign === 'left') return position.x + 60;
+    if (popupAlign === 'right') return position.x - 60;
+    return position.x;
+  });
+
   $effect(() => {
-    if (movie) {
-      loadTrailer();
-    }
-
-    async function loadTrailer() {
-      if (!movie?.id) return;
-
-      trailerUrl = await fetchTrailer(movie.id.toString());
-      isTrailerDisplayed = true;
-    }
-
-    return () => {
+    const id = movie?.id;
+    if (!id) {
       trailerUrl = '';
-      isTrailerDisplayed = false;
+      return;
+    }
+    let cancelled = false;
+    fetchTrailer(id.toString()).then((key) => {
+      if (!cancelled) trailerUrl = key;
+    });
+    return () => {
+      cancelled = true;
+      trailerUrl = '';
     };
   });
 
-  const displayPopover = () => {
-    isHovered = true;
-  };
-
   const hidePopover = () => {
-    if (isHovered || movie || isTrailerDisplayed) {
-      isHovered = false;
-      movie = null;
-      isTrailerDisplayed = false;
-    }
+    cardStore.isHovered = false;
+    cardStore.movie = null;
+    cardStore.cardId = null;
   };
 
   const toggleMute = () => {
     isMuted = !isMuted;
   };
 
-  const handleImageMouseEnter = () => {
-    isTrailerDisplayed = !isTrailerDisplayed;
-  };
-
-  const handleImageMouseEnterAction = () => {
-    isTrailerDisplayed = true;
-  };
-
   const navigateToWatchPage = () => {
-    goto(`watch/${movieId}`);
+    goto(`/watch/${movieId}`);
   };
 
   const toggleFavorites = () => {
     if (!movie) return;
-
     if (addedToFavorites) {
       favoriteList.removeFromFavorites(movie);
-      if (page.url.pathname === '/myList') {
-        hidePopover();
-      }
+      if (page.url.pathname === '/myList') hidePopover();
       return;
     }
     favoriteList.addToFavorites(movie);
@@ -93,135 +98,144 @@
 <svelte:window onscroll={() => hidePopover()} />
 
 <div
-  class={[
-    'popup-card z-40 flex flex-col text-white transition-all duration-300',
-    {
-      'popup-scale-up opacity-100': isHovered,
-      'popup-scale-down opacity-0': !isHovered,
-      hidden: !isHovered
-    }
-  ]}
-  style="position: fixed; top:{position.y}px ; left:{position.x < 200
-    ? position.x + 60
-    : window?.innerWidth - position.x < 200
-      ? position.x - 60
-      : position.x}px; width:350px ;z-index:1000;overflow:hidden"
-  onmouseenter={displayPopover}
+  class="hover-preview bg-card border-line shadow-card pointer-events-none fixed flex w-[22rem] flex-col overflow-hidden rounded-[var(--radius-lg)] border text-white opacity-0 transition-[transform,opacity] duration-300 ease-(--ease-standard)"
+  class:is-open={isHovered}
+  data-align={popupAlign}
+  style="--hp-x: {popupX}px; --hp-y: {position.y}px; top: var(--hp-y); left: var(--hp-x);"
+  onmouseenter={() => (cardStore.isHovered = true)}
   onmouseleave={hidePopover}
   role="presentation"
 >
-  <div class="relative w-full">
-    <div class="flex items-center">
-      <p class="absolute top-36 left-2 z-50 text-xl font-semibold text-ellipsis">
-        {title.length > 25 ? title.substring(0, 25) + '...' : title}
-      </p>
-
-      <span
-        role="presentation"
-        onclick={toggleMute}
-        class="absolute top-36 right-4 z-50 cursor-pointer rounded-full border-2 border-gray-700 p-3 transition-colors duration-200 hover:border-white"
-      >
-        {#if isMuted}
-          <VolumeOff size={20} class="cursor-pointer" />
-        {:else}
-          <Volume2 size={20} class="cursor-pointer" />
-        {/if}
-      </span>
-    </div>
-    {#if trailerUrl && isHovered && isTrailerDisplayed}
-      <div class="pointer-events-none relative aspect-video overflow-hidden">
-        <VideoPlayer bind:this={player} videoId={trailerUrl} {isMuted} />
-      </div>
-    {:else if imageUrl && isHovered}
+  <div class="relative aspect-video w-full overflow-hidden bg-black">
+    {#if imageUrl}
       <img
-        class="h-50 w-full object-cover"
+        class="absolute inset-0 h-full w-full object-cover"
         src={imageUrl}
-        alt="Poster"
+        alt={title}
         onerror={handleNoImageError}
-        onmouseenter={handleImageMouseEnter}
       />
     {:else}
-      <div class="flex h-50 w-full items-center justify-center bg-gray-500">
-        <span class="text-sm text-white">No Image Available</span>
+      <div
+        class="bg-card-2 text-fg-2 absolute inset-0 flex h-full w-full items-center justify-center"
+      >
+        <span class="text-sm">No preview available</span>
       </div>
     {/if}
-  </div>
 
-  <div
-    role="presentation"
-    onmouseenter={handleImageMouseEnterAction}
-    class="flex items-center justify-between p-4"
-  >
-    <div class="flex space-x-2">
-      <button
-        onclick={navigateToWatchPage}
-        class="rounded-full border-2 border-gray-700 p-3 transition-colors duration-200 hover:border-white"
-        ><Play class="h-6 w-6 cursor-pointer text-white" />
-      </button>
+    {#if trailerUrl && isHovered}
+      <div class="pointer-events-none absolute inset-0">
+        <VideoPlayer videoId={trailerUrl} {isMuted} />
+      </div>
+    {/if}
 
-      <button
-        onclick={toggleFavorites}
-        class="rounded-full border-2 border-gray-700 p-3 transition-colors duration-200 hover:border-white"
-      >
-        {#if addedToFavorites}
-          <Check class="h-6 w-6 cursor-pointer text-white" />
-        {:else}
-          <Plus class="h-6 w-6 cursor-pointer text-white" />
-        {/if}
-      </button>
+    <div
+      class="pointer-events-none absolute inset-0"
+      style="background-image:linear-gradient(to top, rgba(26,26,29,0.85), transparent 55%);"
+    ></div>
 
-      <button
-        class="rounded-full border-2 border-gray-700 p-3 transition-colors duration-200 hover:border-white"
-      >
-        <ThumbsUp class="h-6 w-6 cursor-pointer text-white" />
-      </button>
-    </div>
+    <p
+      class="absolute bottom-2 left-3 z-10 m-0 text-base font-extrabold tracking-[-0.01em] text-white"
+      style="text-shadow:0 1px 6px rgba(0,0,0,0.7);"
+    >
+      {title.length > 28 ? title.substring(0, 28) + '…' : title}
+    </p>
 
     <button
-      class="rounded-full border-2 border-gray-700 p-3 transition-colors duration-200 hover:border-white"
-      onclick={() => modalContext.openModal(movieId, trailerUrl)}
+      type="button"
+      class="btn-icon absolute right-2 bottom-2 z-10 !h-[1.875rem] !w-[1.875rem]"
+      aria-label={isMuted ? 'Unmute' : 'Mute'}
+      onclick={toggleMute}
     >
-      <ChevronDown class="h-6 w-6 cursor-pointer text-white" />
+      {#if isMuted}
+        <VolumeOff size={16} />
+      {:else}
+        <Volume2 size={16} />
+      {/if}
     </button>
   </div>
 
-  <div class="p-4">
-    <div class="flex gap-3">
-      <span class="text-green-400">70% Match</span>
-      <span class="rounded-sm border-2 border-gray-600 text-sm">13 +</span>
-      <span class="font-bold">21m</span>
-      <span class="rounded-sm border-2 border-gray-600 text-sm">HD</span>
+  <div class="flex flex-col gap-3 p-4">
+    <div class="flex items-center justify-between">
+      <div class="flex gap-2">
+        <button
+          class="bg-brand shadow-brand inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-full border-0 text-white transition-transform duration-150 ease-(--ease-standard) hover:scale-105"
+          aria-label="Play"
+          onclick={navigateToWatchPage}
+          type="button"
+        >
+          <Play size={18} fill="currentColor" />
+        </button>
+
+        <button
+          class="btn-icon"
+          aria-label={addedToFavorites ? 'Remove from list' : 'Add to list'}
+          onclick={toggleFavorites}
+          type="button"
+        >
+          {#if addedToFavorites}
+            <Check size={16} />
+          {:else}
+            <Plus size={16} />
+          {/if}
+        </button>
+
+        <button class="btn-icon" aria-label="Like" type="button">
+          <ThumbsUp size={16} />
+        </button>
+      </div>
+
+      <button
+        class="btn-icon"
+        aria-label="More info"
+        onclick={() => modalContext.openModal(movieId, trailerUrl)}
+        type="button"
+      >
+        <ChevronDown size={16} />
+      </button>
     </div>
-    <div class="mt-2 flex space-x-2 text-lg">
-      <span>Witty • Heartfelt • Drama</span>
+
+    <div class="flex flex-wrap items-center gap-2 text-[0.8125rem]">
+      {#if matchPct > 0}
+        <span class="badge-match">{matchPct}% Match</span>
+      {/if}
+      <span class="badge-rating">13+</span>
+      {#if year}<span class="text-fg-1 font-semibold">{year}</span>{/if}
+      <span class="badge-rating">HD</span>
     </div>
+
+    <p class="text-fg-1 m-0 text-[0.8125rem]">
+      <span class="text-brand font-semibold">Witty</span> ·
+      <span class="text-brand font-semibold">Heartfelt</span> ·
+      <span class="text-brand font-semibold">Drama</span>
+    </p>
   </div>
 </div>
 
 <style>
-  .popup-card {
-    background-color: rgb(20, 20, 20);
-    box-shadow:
-      rgba(0, 0, 0, 0.2) 0px 2px 1px 1px,
-      rgba(0, 0, 0, 0.14) 0px 1px 1px 0px,
-      rgba(0, 0, 0, 0.12) 0px 1px 3px 1px;
-    background-image: linear-gradient(rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.05));
-    border-radius: 8px;
-    transform-origin: center;
+  .hover-preview {
+    z-index: 60;
+    transform-origin: center bottom;
+    transform: translate(-50%, -100%) scale(0.4);
+    transition-delay: 0ms, 0ms;
   }
-
-  .popup-scale-down {
-    transform: translate(-50%, -100%) scale(0.1);
+  .hover-preview[data-align='left'] {
+    transform-origin: left bottom;
+    transform: translate(-30%, -100%) scale(0.4);
   }
-
-  .popup-scale-up {
+  .hover-preview[data-align='right'] {
+    transform-origin: right bottom;
+    transform: translate(-70%, -100%) scale(0.4);
+  }
+  .hover-preview.is-open {
     transform: translate(-50%, -100%) scale(1);
     opacity: 1;
+    pointer-events: auto;
+    transition-delay: 60ms, 0ms;
   }
-
-  .transition-all {
-    transition:
-      transform 0.3s ease 0.1s,
-      opacity 0.3s ease;
+  .hover-preview[data-align='left'].is-open {
+    transform: translate(-30%, -100%) scale(1);
+  }
+  .hover-preview[data-align='right'].is-open {
+    transform: translate(-70%, -100%) scale(1);
   }
 </style>

@@ -1,48 +1,48 @@
 import {
+  fetchNewReleases,
   fetchPopularMovies,
   fetchTopRatedMovies,
   fetchTrendingMovies,
-  getGenres,
   getMoviesByGenre
 } from '$api/catalog';
 import type { PageServerLoad } from './$types';
 
+const CURATED_ROWS: { id: number; name: string; genreIds: number[] }[] = [
+  { id: 10749, name: 'Romance & Slice of Life', genreIds: [10749] },
+  { id: 53, name: 'Thriller, Crime & Dark Drama', genreIds: [53, 80] },
+  { id: 36, name: 'Sageuk · Period Dramas', genreIds: [36] }
+];
+
 export const load = (async ({ fetch }) => {
   try {
-    const [popularMovies, topRatedMovies, trendingMovies, genres] = await Promise.all([
-      fetchPopularMovies(fetch),
-      fetchTopRatedMovies(fetch),
-      fetchTrendingMovies(fetch),
-      getGenres(fetch)
-    ]);
+    const [popularMovies, topRatedMovies, trendingMovies, newReleases, ...curatedResults] =
+      await Promise.all([
+        fetchPopularMovies(fetch),
+        fetchTopRatedMovies(fetch),
+        fetchTrendingMovies(fetch),
+        fetchNewReleases(fetch),
+        ...CURATED_ROWS.map((row) => getMoviesByGenre(fetch, row.genreIds.join(',')))
+      ]);
 
-    const moviesByGenre: MoviesWithGenre[] = genres
-      ? await Promise.all(
-          genres.map(async (genre: Genre) => {
-            const movies = await getMoviesByGenre(fetch, genre.id);
-            return {
-              id: genre.id,
-              name: genre.name,
-              movies
-            };
-          })
-        )
-      : [];
+    const curatedRows: MoviesWithGenre[] = CURATED_ROWS.map((row, i) => ({
+      id: row.id,
+      name: row.name,
+      movies: curatedResults[i]
+    }));
 
     if (popularMovies.length === 0) {
       throw new Error('No popular movies found.');
     }
 
-    //TODO: fetch the trailer of the selected movie
-
-    return { popularMovies, topRatedMovies, trendingMovies, moviesByGenre };
+    return { popularMovies, topRatedMovies, trendingMovies, newReleases, curatedRows };
   } catch {
     console.error('Something went wrong fetching the data.');
     return {
       popularMovies: [],
       topRatedMovies: [],
       trendingMovies: [],
-      moviesByGenre: []
+      newReleases: [],
+      curatedRows: []
     };
   }
 }) satisfies PageServerLoad;

@@ -12,57 +12,56 @@
     description,
     duration = '22m',
     imageUrl,
-    match = '67% Match',
-    rating = '5+'
+    match = '94% Match',
+    rating = '13+'
   }: SimilarCardProps = $props();
+
+  const handlePlay = () => {
+    goto(`/watch/${id}`);
+    closeModal();
+  };
 </script>
 
-<div class="w-40 rounded-lg bg-[#181818] text-white shadow-md sm:w-48">
-  <div class="relative">
+<article
+  class="bg-card-2 flex w-full flex-col overflow-hidden rounded-[var(--radius-lg)] text-white shadow-sm transition-transform duration-150 ease-(--ease-standard) hover:-translate-y-0.5"
+>
+  <button
+    class="group relative aspect-video w-full cursor-pointer overflow-hidden border-0 bg-black p-0"
+    onclick={handlePlay}
+    aria-label={`Play ${title}`}
+    type="button"
+  >
     <img
       src={imageUrl}
       alt={title}
       onerror={handleNoImageError}
-      class="h-40 w-full rounded-t-lg object-cover"
+      class="h-full w-full object-cover transition-transform duration-300 ease-(--ease-standard) group-hover:scale-105"
     />
-
-    <div
-      class="absolute top-2 right-2 rounded-md bg-[#000000b3] px-2 py-0.5 text-sm font-semibold text-white"
+    <span
+      class="absolute top-2 right-2 rounded-[var(--radius-sm)] bg-black/80 px-2 py-[2px] text-xs font-bold text-white"
     >
       {duration}
+    </span>
+    <span
+      class="absolute bottom-2 left-3 text-left text-[0.95rem] font-bold text-white"
+      style="text-shadow:0 1px 6px rgba(0,0,0,0.8);"
+    >
+      {title}
+    </span>
+    <span
+      class="bg-brand shadow-brand absolute right-2 bottom-2 inline-flex h-8 w-8 items-center justify-center rounded-full text-white opacity-0 transition-opacity duration-150 ease-(--ease-standard) group-hover:opacity-100"
+    >
+      <Play size={20} fill="currentColor" />
+    </span>
+  </button>
+
+  <div class="flex flex-col gap-2 px-3 pt-3 pb-4">
+    <div class="flex items-center gap-3">
+      <span class="badge-match">{match}</span>
+      <span class="badge-rating">{rating}</span>
     </div>
-
-    <div class="absolute inset-0 bg-linear-to-t from-[#141414] to-transparent"></div>
-
-    <h3 class="absolute bottom-0 left-2 mb-1.5 text-base font-semibold">{title}</h3>
+    <p class="text-fg-1 m-0 text-[0.8125rem] leading-[1.4]">
+      {description.length > 90 ? description.substring(0, 90) + '…' : description}
+    </p>
   </div>
-
-  <div class="p-3">
-    <div class="mb-1 flex flex-col text-sm">
-      <div class="flex justify-between">
-        <div class="flex flex-col items-center justify-between">
-          <div class="text-[#46d369]">
-            <span>{match}</span>
-          </div>
-          <div class="text-[#b3b3b3]">
-            <span class="mr-2 border border-[#b3b3b3] px-1">{rating}</span>
-            <span>2023</span>
-          </div>
-        </div>
-
-        <div>
-          <button
-            onclick={() => {
-              goto(`watch/${id}`);
-              closeModal();
-            }}
-            class="rounded-full border-2 border-gray-700 p-3 transition-colors duration-200 hover:border-white"
-          >
-            <Play class="h-6 w-6 text-white" /></button
-          >
-        </div>
-      </div>
-    </div>
-    <p class="mb-3 text-xs leading-tight text-[#b3b3b3]">{description.substring(0, 50) + '...'}</p>
-  </div>
-</div>
+</article>

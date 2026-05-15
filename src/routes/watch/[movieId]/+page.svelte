@@ -18,7 +18,6 @@
     if (movieId && movieId !== fetchedMovieId) {
       fetchedMovieId = movieId;
 
-      // reset the movie card state when navigating to a new movie page
       movieCardState.isHovered = false;
       movieCardState.movie = null;
       movieCardState.position = { x: -500, y: 0 };
@@ -54,14 +53,28 @@
   });
 </script>
 
-<div class="h-screen bg-black">
+<main class="watch-page">
   {#if loading}
-    <p class="absolute top-28 left-12 w-full text-white">Loading Trailer...</p>
+    <p class="watch-page__message">Loading Trailer...</p>
   {:else if videoId}
     <VideoPlayer {videoId} isMuted={false} showControls={true} />
   {:else if error}
-    <p class="absolute top-28 left-12 w-full text-white">{error}</p>
+    <p class="watch-page__message">{error}</p>
   {:else}
-    <p class="absolute top-28 left-12 w-full text-white">No Trailer Found...</p>
+    <p class="watch-page__message">No Trailer Found...</p>
   {/if}
-</div>
+</main>
+
+<style>
+  .watch-page {
+    min-height: 100vh;
+    background-color: var(--bg-immersive);
+  }
+
+  .watch-page__message {
+    position: absolute;
+    top: 7rem;
+    left: var(--space-12);
+    color: var(--text-primary);
+  }
+</style>

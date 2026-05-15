@@ -3,8 +3,9 @@ const { TMDB_API_KEY } = env;
 if (!TMDB_API_KEY) {
   throw new Error('TMDB_API_KEY is not defined in environment variables');
 }
-// Generic Api Wrapper
+
 export const BASE_URL = 'https://api.themoviedb.org/3';
+
 export async function tmdbFetch<T>(
   endpoint: string,
   params: Record<string, string | number | boolean> = {},
@@ -22,14 +23,13 @@ export async function tmdbFetch<T>(
     const response = await fetchFn(url.toString());
 
     if (!response.ok) {
-      console.log(`HTTP error! status: ${response.status}`);
+      console.error(`TMDB HTTP ${response.status} for ${endpoint}`);
       return null;
     }
 
-    const data: T = await response.json();
-    return data;
+    return (await response.json()) as T;
   } catch (error) {
-    console.log('TMDB Error', error);
+    console.error('TMDB error', error);
     return null;
   }
 }

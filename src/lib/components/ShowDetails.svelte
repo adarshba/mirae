@@ -6,6 +6,7 @@
   import ThumbsUp from '@lucide/svelte/icons/thumbs-up';
   import Volume2 from '@lucide/svelte/icons/volume-2';
   import VolumeOff from '@lucide/svelte/icons/volume-off';
+  import X from '@lucide/svelte/icons/x';
   import VideoPlayer from '$components/VideoPlayer.svelte';
   import { convertMinsToHrs } from '$utils/helpers';
   import { getModalContext } from '$stores/ModalStore.svelte';
@@ -16,252 +17,191 @@
   const modalContext = getModalContext();
   const { favorites, addToFavorites } = $derived(getFavoritesContext());
 
-  $effect(() => {
-    if (browser) {
-      if (modalContext.isOpen) {
-        document.body.style.overflow = 'hidden';
-      } else {
-        document.body.style.overflow = '';
-      }
-    }
+  let isMuted = $state(true);
 
+  const data = $derived(modalContext.movieData);
+  const matchPct = $derived(data?.vote_average ? Math.round(data.vote_average * 10) : 0);
+  const year = $derived(data?.release_date?.slice(0, 4) ?? '');
+  const addedToFav = $derived(favorites.some((fav) => fav.id === modalContext.movieId));
+
+  $effect(() => {
+    if (!browser) return;
+    document.body.style.overflow = modalContext.isOpen ? 'hidden' : '';
     return () => {
-      if (browser) {
-        document.body.style.overflow = '';
-      }
+      document.body.style.overflow = '';
     };
   });
-
-  const addedToFav = $derived(favorites.some((fav) => fav.id === modalContext.movieId));
-  let isMuted = $state(true);
 
   const toggleMute = () => {
     isMuted = !isMuted;
   };
+
+  const playMovie = () => {
+    goto(`/watch/${modalContext.movieId}`);
+    modalContext.closeModal();
+  };
 </script>
 
 {#if modalContext.isOpen}
-  <div class="overlay">
+  <div class="modal-overlay" role="presentation" onclick={modalContext.closeModal}>
     <div
-      role="presentation"
-      class="modal-content w-[90%] md:w-[80%] lg:w-[50%]"
-      onclick={(event) => {
-        event.stopPropagation();
+      class="bg-card border-line no-scrollbar relative max-h-[90vh] w-[min(95vw,56rem)] overflow-y-auto rounded-[var(--radius-xl)] border text-white shadow-[0_24px_60px_rgba(0,0,0,0.65)]"
+      role="dialog"
+      aria-modal="true"
+      tabindex="-1"
+      onclick={(e) => e.stopPropagation()}
+      onkeydown={(e) => {
+        if (e.key === 'Escape') modalContext.closeModal();
       }}
     >
-      <button class="close-button" onclick={modalContext.closeModal} aria-label="Close Modal">
-        &times;
+      <button
+        class="border-line absolute top-3 right-3 z-50 inline-flex h-8 w-8 cursor-pointer items-center justify-center rounded-full border bg-black/85 text-white transition-colors duration-150 ease-(--ease-standard) hover:bg-[var(--color-card-2)]"
+        onclick={modalContext.closeModal}
+        aria-label="Close"
+        type="button"
+      >
+        <X size={18} />
       </button>
 
-      <div class="content">
+      <div class="relative aspect-video overflow-hidden bg-black">
         {#if modalContext.trailerId}
-          <div class="pointer-events-none relative aspect-video overflow-hidden">
-            <div
-              class="absolute inset-0 bottom-0 z-30 bg-linear-to-t from-[#141414] to-transparent"
-            ></div>
-
-            <div class="pointer-events-auto absolute bottom-0 left-6 z-50 w-[90%] md:left-12">
-              <p class="mb-4 text-4xl font-bold text-white">
-                {modalContext.movieData?.original_title}
-              </p>
-
-              <div class="flex w-full justify-between">
-                <div class="flex h-40 items-center gap-4">
-                  <button
-                    class="flex items-center gap-2 rounded-md bg-white px-8 py-1 text-xl font-bold text-black transition-all hover:bg-gray-200"
-                    onclick={() => {
-                      goto(`/watch/${modalContext.movieId}`);
-                      modalContext.closeModal();
-                    }}
-                  >
-                    <Play size={20} class="cursor-pointer" />
-                    <span class="hidden cursor-pointer font-semibold md:block">Play</span>
-                  </button>
-
-                  <button
-                    class="rounded-full border-2 border-gray-700 p-3 transition-colors duration-200 hover:border-white"
-                    onclick={() => addToFavorites(modalContext.movieData!)}
-                  >
-                    {#if addedToFav}
-                      <Check class="h-6 w-6 cursor-pointer text-white" />
-                    {:else}
-                      <Plus class="h-6 w-6 cursor-pointer text-white" />
-                    {/if}
-                  </button>
-
-                  <button
-                    class="rounded-full border-2 border-gray-700 p-3 transition-colors duration-200 hover:border-white"
-                  >
-                    <ThumbsUp class="h-6 w-6 cursor-pointer text-white" />
-                  </button>
-                  <button
-                    onclick={toggleMute}
-                    class="rounded-full border-2 border-gray-700 p-3 transition-colors duration-200 hover:border-white"
-                  >
-                    {#if isMuted}
-                      <VolumeOff class="h-6 w-6 cursor-pointer text-white" />
-                    {:else}
-                      <Volume2 class="h-6 w-6 cursor-pointer text-white" />
-                    {/if}
-                  </button>
-                </div>
-              </div>
-            </div>
-            {#if modalContext.trailerId}
-              <VideoPlayer videoId={modalContext.trailerId} {isMuted} />
-            {:else}
-              <div class="flex h-64 items-center justify-center bg-gray-800">
-                <p class="text-white">Video Unavailable...</p>
-              </div>
-            {/if}
-          </div>
+          <VideoPlayer videoId={modalContext.trailerId} {isMuted} />
+        {:else if data?.backdrop_path}
+          <img
+            class="h-full w-full object-cover"
+            src={`https://image.tmdb.org/t/p/original${data.backdrop_path}`}
+            alt={data?.title ?? ''}
+          />
         {:else}
-          <div class="flex h-64 items-center justify-center bg-gray-800">
-            <p class="text-white">Video not available for this movie...</p>
+          <div class="text-fg-2 flex h-full w-full items-center justify-center">
+            <span class="text-sm">No preview available</span>
           </div>
         {/if}
 
-        <div class="relative px-6 pt-6 md:px-12">
-          <div
-            class="absolute inset-0 bottom-0 z-30 h-5 bg-linear-to-b from-[#141414] to-transparent"
-          ></div>
-          <div class="flex flex-col lg:flex-row">
-            <div class="flex flex-1 items-center gap-3">
-              <span class="text-green-400">
-                {modalContext.movieData?.vote_average
-                  ? `${(modalContext.movieData?.vote_average * 10).toFixed(0)}% Match`
-                  : 'N/A'}
-              </span>
-              <span class="rounded-sm border-2 border-gray-600 text-sm">
-                {modalContext.movieData?.adult ? '18+' : '13+'}
-              </span>
+        <div
+          class="pointer-events-none absolute inset-0"
+          style="background-image:linear-gradient(to top, var(--color-card) 0%, rgba(26,26,29,0.6) 25%, transparent 60%);"
+        ></div>
 
-              <span class="font-bold">
-                {modalContext.movieData?.runtime
-                  ? convertMinsToHrs(modalContext.movieData.runtime)
-                  : 'N/A'}
-              </span>
+        <div class="absolute right-6 bottom-5 left-6 z-50 md:right-8 md:left-8">
+          <h1
+            class="m-0 mb-4 text-3xl leading-tight font-extrabold tracking-tight text-white md:text-4xl"
+            style="text-shadow:0 2px 12px rgba(0,0,0,0.7);"
+          >
+            {data?.title ?? ''}
+          </h1>
+          <div class="flex items-center gap-3">
+            <button
+              class="inline-flex cursor-pointer items-center gap-2 rounded-[var(--radius-md)] border-0 bg-white px-5 py-3 font-bold text-black transition-colors duration-150 ease-(--ease-standard) hover:bg-white/85"
+              onclick={playMovie}
+              type="button"
+            >
+              <Play size={20} fill="currentColor" />
+              <span>Play</span>
+            </button>
 
-              <span class="rounded-sm border-2 border-gray-700 text-sm">4K</span>
-            </div>
+            <button
+              class="btn-icon"
+              aria-label={addedToFav ? 'Remove from list' : 'Add to list'}
+              onclick={() => data && addToFavorites(data)}
+              type="button"
+            >
+              {#if addedToFav}
+                <Check size={18} />
+              {:else}
+                <Plus size={18} />
+              {/if}
+            </button>
 
-            <div class="flex-1 flex-col">
-              <div class="flex lg:ml-40">
-                {#if Array.isArray(modalContext?.movieData?.genres) && modalContext.movieData.genres.length > 0}
-                  <span class="font-semibold">Genre:&nbsp;</span>
-                  {#each modalContext.movieData.genres.slice(0, 3) as genre (genre.id)}
-                    <span class="mr-2">{genre.name}</span>
-                  {/each}
+            <button class="btn-icon" aria-label="Like" type="button">
+              <ThumbsUp size={18} />
+            </button>
+
+            {#if modalContext.trailerId}
+              <button
+                class="btn-icon ml-auto"
+                aria-label={isMuted ? 'Unmute' : 'Mute'}
+                onclick={toggleMute}
+                type="button"
+              >
+                {#if isMuted}
+                  <VolumeOff size={18} />
                 {:else}
-                  <span class="font-semibold">Genre: N/A</span>
+                  <Volume2 size={18} />
                 {/if}
-              </div>
-
-              <div class="mt-2 flex lg:ml-40">
-                <span class="font-semibold">Available in: &nbsp;</span>
-                {#if Array.isArray(modalContext?.movieData?.spoken_languages) && modalContext.movieData.spoken_languages.length > 0}
-                  {#each modalContext.movieData.spoken_languages as lang (lang.iso_639_1)}
-                    <span class="mr-2">{lang.name}</span>
-                  {/each}
-                {:else}
-                  <span class="font-semibold">N/A</span>
-                {/if}
-              </div>
-            </div>
+              </button>
+            {/if}
           </div>
+        </div>
+      </div>
 
-          <div class="relative mt-2 w-full lg:w-1/2">
-            <p>
-              {modalContext.movieData?.overview || 'No overview is available for the movie.'}
+      <div class="p-6 md:p-8">
+        <div class="mb-8 grid grid-cols-1 gap-5 md:grid-cols-[2fr_1fr] md:gap-8">
+          <div>
+            <div class="text-fg-1 mb-4 flex flex-wrap items-center gap-3 text-sm">
+              {#if matchPct > 0}<span class="badge-match">{matchPct}% Match</span>{/if}
+              {#if year}<span class="text-fg-1 font-semibold">{year}</span>{/if}
+              <span class="badge-rating">{data?.adult ? '18+' : '13+'}</span>
+              {#if data?.runtime}
+                <span class="font-bold">{convertMinsToHrs(data.runtime)}</span>
+              {/if}
+              <span class="badge-rating">HD</span>
+            </div>
+
+            <p class="m-0 text-base leading-relaxed text-white">
+              {data?.overview || 'No overview available.'}
             </p>
           </div>
 
-          {#if modalContext.loadingSimilarMovies}
-            <div class="mt-4">
-              <p class="text-center">Loading Similar Movies...</p>
-            </div>
-          {:else if modalContext.similarMovies.length === 0}
-            <div class="mt-4">
-              <p class="text-center text-red-500">Similar Movies Not Found...</p>
-            </div>
-          {:else if modalContext.similarMovies.length > 0}
-            <div>
-              <h1 class="my-4 text-2xl font-bold">More Like This</h1>
-              <div class="flex flex-wrap justify-center gap-x-4 gap-y-8 sm:justify-between">
-                {#each modalContext.similarMovies.slice(0, 12) as similarMovie (similarMovie.id)}
-                  <RelatedCard
-                    id={similarMovie.id}
-                    title={similarMovie.title!}
-                    description={similarMovie.overview!}
-                    imageUrl={`https://image.tmdb.org/t/p/w500${similarMovie.backdrop_path}`}
-                  />
-                {/each}
+          <aside class="flex flex-col gap-3 text-sm">
+            {#if data?.genres?.length}
+              <div class="flex flex-wrap gap-2">
+                <span class="text-fg-2">Genres:</span>
+                <span class="text-white">
+                  {data.genres
+                    .slice(0, 3)
+                    .map((g) => g.name)
+                    .join(', ')}
+                </span>
               </div>
-            </div>
-          {/if}
+            {/if}
+            {#if data?.spoken_languages?.length}
+              <div class="flex flex-wrap gap-2">
+                <span class="text-fg-2">Languages:</span>
+                <span class="text-white">
+                  {data.spoken_languages.map((l) => l.name).join(', ')}
+                </span>
+              </div>
+            {/if}
+            {#if data?.production_countries?.length}
+              <div class="flex flex-wrap gap-2">
+                <span class="text-fg-2">Origin:</span>
+                <span class="text-white">
+                  {data.production_countries.map((c) => c.name).join(', ')}
+                </span>
+              </div>
+            {/if}
+          </aside>
         </div>
+
+        {#if modalContext.loadingSimilarMovies}
+          <p class="text-fg-2 mt-4 text-center">Loading similar titles…</p>
+        {:else if modalContext.similarMovies.length > 0}
+          <section class="mt-4">
+            <h2 class="m-0 mb-4 text-2xl font-bold tracking-tight text-white">More Like This</h2>
+            <div class="grid grid-cols-2 gap-4 md:grid-cols-3">
+              {#each modalContext.similarMovies.slice(0, 9) as similarMovie (similarMovie.id)}
+                <RelatedCard
+                  id={similarMovie.id}
+                  title={similarMovie.title!}
+                  description={similarMovie.overview!}
+                  imageUrl={`https://image.tmdb.org/t/p/w500${similarMovie.backdrop_path}`}
+                />
+              {/each}
+            </div>
+          </section>
+        {/if}
       </div>
     </div>
   </div>
 {/if}
-
-<style>
-  .overlay {
-    position: fixed;
-    inset: 0;
-    background-color: rgba(0, 0, 0, 0.5);
-    display: flex;
-    justify-content: center;
-    align-items: flex-start;
-    padding-top: 4rem;
-    z-index: 50;
-  }
-
-  .content {
-    position: relative;
-    background-color: rgb(20, 20, 20);
-    color: white;
-    box-shadow:
-      rgba(0, 0, 0, 0.2) 0px 2px 1px 1px,
-      rgba(0, 0, 0, 0.14) 0px 1px 1px 0px,
-      rgba(0, 0, 0, 0.12) 0px 1px 3px 0px;
-    background-image: linear-gradient(rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.05));
-  }
-
-  .modal-content {
-    background-color: white;
-    position: relative;
-    max-height: 90vh;
-    height: 90vh;
-    overflow-y: auto;
-    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
-    border-radius: 0.5rem;
-  }
-
-  .modal-content::-webkit-scrollbar {
-    width: 0;
-  }
-
-  .modal-content::-webkit-scrollbar-thumb {
-    background-color: rgba(0, 0, 0, 0.2);
-    border-radius: 4px;
-  }
-
-  .close-button {
-    position: absolute;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    padding: 1.5rem;
-    height: 1.5rem;
-    width: 1rem;
-    font-size: 1.2rem;
-    top: 0.75rem;
-    right: 0.75rem;
-    background: black;
-    color: white;
-    border-radius: 50%;
-    cursor: pointer;
-    z-index: 50;
-  }
-</style>

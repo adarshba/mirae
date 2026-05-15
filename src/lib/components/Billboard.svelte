@@ -1,30 +1,61 @@
 <script lang="ts">
-  import Info from '@lucide/svelte/icons/info';
+  import Check from '@lucide/svelte/icons/check';
   import Play from '@lucide/svelte/icons/play';
+  import Plus from '@lucide/svelte/icons/plus';
   import Volume2 from '@lucide/svelte/icons/volume-2';
   import VolumeOff from '@lucide/svelte/icons/volume-off';
   import { getMoviesContext } from '$stores/MovieStore.svelte';
   import { goto } from '$app/navigation';
   import { fetchTrailer } from '$utils/helpers';
   import VideoPlayer from '$components/VideoPlayer.svelte';
-  import { getModalContext } from '$stores/ModalStore.svelte';
+  import { getFavoritesContext } from '$stores/favoriteListStore.svelte';
+  import { getAuthContext } from '$stores/AuthStore.svelte';
 
-  const { selectedMovie } = $derived(getMoviesContext());
+  const movieStore = getMoviesContext();
+  const selectedMovie = $derived(movieStore.selectedMovie);
   let trailerId = $state('');
   let isMuted = $state(true);
 
-  const modalContext = getModalContext();
+  const favorites = getFavoritesContext();
+  const authStore = getAuthContext();
+  const isInteractive = $derived(!!authStore.user);
+
+  const handlePlay = () => {
+    if (!selectedMovie) return;
+    if (!isInteractive) {
+      goto('/login');
+      return;
+    }
+    goto(`/watch/${selectedMovie.id}`);
+  };
+
+  const year = $derived(selectedMovie?.release_date?.slice(0, 4) ?? '');
+  const rating = $derived(selectedMovie?.vote_average ?? 0);
+  const matchPct = $derived(rating > 0 ? Math.round(rating * 10) : 0);
+  const isListed = $derived(
+    !!selectedMovie && favorites.favorites.some((m) => m.id === selectedMovie.id)
+  );
+
+  const toggleList = () => {
+    if (!selectedMovie) return;
+    if (!isInteractive) {
+      goto('/login');
+      return;
+    }
+    if (isListed) favorites.removeFromFavorites(selectedMovie);
+    else favorites.addToFavorites(selectedMovie);
+  };
 
   $effect(() => {
     if (!selectedMovie?.id) return;
-
-    loadTrailer();
-
-    async function loadTrailer() {
-      const movieId = selectedMovie!.id!.toString();
-      const trailer = await fetchTrailer(movieId);
-      trailerId = trailer;
-    }
+    trailerId = '';
+    fetchTrailer(selectedMovie.id.toString()).then((key) => {
+      if (key) {
+        trailerId = key;
+      } else {
+        movieStore.pickRandom();
+      }
+    });
   });
 
   const toggleMute = () => {
@@ -32,66 +63,99 @@
   };
 </script>
 
-<main class="relative h-screen overflow-hidden">
-  {#if trailerId}
-    <VideoPlayer videoId={trailerId} {isMuted} />
-  {/if}
+<section class="relative h-[92vh] min-h-[36rem] overflow-hidden">
+  <div class="absolute inset-0">
+    {#if selectedMovie?.backdrop_path}
+      <img
+        class="h-full w-full object-cover"
+        src={`https://image.tmdb.org/t/p/original${selectedMovie.backdrop_path}`}
+        alt={selectedMovie.title ?? ''}
+      />
+    {/if}
+    {#if trailerId}
+      <div class="absolute inset-0">
+        <VideoPlayer videoId={trailerId} {isMuted} />
+      </div>
+    {/if}
+  </div>
 
-  {#if selectedMovie && !trailerId}
-    <img
-      src={`https://image.tmdb.org/t/p/original${selectedMovie.backdrop_path}`}
-      alt="movie backdrop"
-    />
-  {/if}
-
-  <div class="to transparent absolute inset-0 bg-linear-to-t from-[#141414]"></div>
+  <div
+    class="pointer-events-none absolute inset-0"
+    style="background-image:linear-gradient(to top, var(--bg-app) 0%, rgba(10,10,11,0.6) 30%, rgba(10,10,11,0.1) 60%, transparent 100%);"
+  ></div>
+  <div
+    class="pointer-events-none absolute inset-0"
+    style="background-image:linear-gradient(to left, rgba(10,10,11,0.7) 0%, rgba(10,10,11,0.25) 40%, transparent 70%);"
+  ></div>
 
   {#if selectedMovie}
-    <div class="absolute top-[45%] z-10 w-full pl-12">
-      <h1 class="mb-4 text-4xl font-bold text-white md:text-6xl">{selectedMovie.title}</h1>
-      <p class="mb-6 hidden max-w-lg text-sm text-gray-300 md:block md:text-lg">
-        {selectedMovie.overview?.substring(0, 200) + '...'}
+    <div
+      class="absolute bottom-[18%] left-6 z-10 flex max-w-[38rem] flex-col gap-4 md:bottom-[22%] md:left-12 md:gap-5 lg:max-w-[42rem]"
+    >
+      <h1
+        class="text-display m-0 text-[color:var(--text-primary)]"
+        style="text-shadow:0 4px 24px rgba(0,0,0,0.6);"
+      >
+        {selectedMovie.title}
+      </h1>
+
+      <div
+        class="flex flex-wrap items-center gap-3 text-[0.875rem] font-medium text-[color:var(--text-secondary)]"
+      >
+        {#if matchPct > 0}
+          <span class="badge-match">{matchPct}% Match</span>
+        {/if}
+        {#if year}<span>{year}</span>{/if}
+        <span class="badge-rating">16+</span>
+        <span class="text-[color:var(--muted-foreground)]">·</span>
+        <span>Korea</span>
+        <span
+          class="inline-block rounded-sm border border-[color:var(--border-default)] px-1 text-[0.6875rem] leading-[1.4] font-bold tracking-[0.06em] text-[color:var(--text-secondary)]"
+        >
+          HD
+        </span>
+      </div>
+
+      <p
+        class="text-body m-0 hidden text-[color:var(--text-secondary)] md:block md:text-[1.05rem] md:leading-[1.55]"
+        style="text-shadow:0 2px 8px rgba(0,0,0,0.5);"
+      >
+        {selectedMovie.overview ?? ''}
       </p>
-      <div class="flex flex-wrap items-center">
-        <div class="flex gap-4">
-          <button
-            class="flex items-center gap-2 rounded-md bg-white px-4 py-2 text-black transition hover:bg-gray-200"
-            onclick={() => goto(`/watch/${selectedMovie.id}`)}
-          >
-            <Play size={20} />
-            <span class="cursor-pointer font-semibold">Play</span>
-          </button>
 
-          <button
-            class="flex items-center gap-2 rounded-md bg-gray-700 px-4 py-2 text-white transition hover:bg-gray-600"
-            onclick={() => modalContext.openModal(selectedMovie.id!, trailerId)}
-          >
-            <Info size={20} />
-            <span class="cursor-pointer font-semibold">More Info</span>
-          </button>
-        </div>
+      <div class="mt-3 flex flex-wrap items-center gap-3">
+        <button class="btn btn-primary" onclick={handlePlay}>
+          <Play size={20} fill="currentColor" />
+          <span class="text-button">Play</span>
+        </button>
 
-        <div class="absolute right-0 flex items-center gap-4">
-          <button
-            class="flex items-center gap-2 rounded-full border-2 p-4 text-white transition"
-            onclick={toggleMute}
-          >
-            {#if isMuted}
-              <VolumeOff size={20} />
+        {#if isInteractive}
+          <button class="btn btn-secondary" onclick={toggleList} aria-pressed={isListed}>
+            {#if isListed}
+              <Check size={20} />
+              <span class="text-button">In My List</span>
             {:else}
-              <Volume2 size={20} />
+              <Plus size={20} />
+              <span class="text-button">My List</span>
             {/if}
           </button>
+        {/if}
+      </div>
+    </div>
 
-          <div class="bg-opacity-60 border-l-2 bg-gray-600 px-3 py-2 text-white">
-            {#if selectedMovie.adult}
-              <span>18+</span>
-            {:else}
-              <span>13+</span>
-            {/if}
-          </div>
-        </div>
+    <div class="absolute right-0 bottom-[22%] z-10 flex items-center gap-4 md:bottom-[26%]">
+      <button class="btn-icon" aria-label={isMuted ? 'Unmute' : 'Mute'} onclick={toggleMute}>
+        {#if isMuted}
+          <VolumeOff size={18} />
+        {:else}
+          <Volume2 size={18} />
+        {/if}
+      </button>
+      <div
+        class="border-l-[3px] border-white/60 bg-black/50 py-2 pr-4 pl-3 text-[0.8125rem] font-semibold tracking-[0.06em] text-[color:var(--text-primary)]"
+      >
+        16+
       </div>
     </div>
   {/if}
-</main>
+</section>

@@ -8,9 +8,6 @@ export function handleNoImageError(event: Event) {
   }
 }
 
-// import { cardState, favouriteListRefresh } from "$lib/store/GlobalState"
-// import { get } from "svelte/store"
-
 export const fetchTrailer = async (movieId: string): Promise<string> => {
   if (!movieId) throw new Error('No movie ID provided');
   try {
@@ -22,14 +19,9 @@ export const fetchTrailer = async (movieId: string): Promise<string> => {
     });
     const data = (await response.json()) as { trailer: Trailer };
 
-    if (data.trailer && data.trailer.key) {
-      return data.trailer.key;
-    } else {
-      console.log('no trailer found');
-      return '';
-    }
+    return data.trailer?.key ?? '';
   } catch (error) {
-    console.log(error);
+    console.error(error);
     return '';
   }
 };

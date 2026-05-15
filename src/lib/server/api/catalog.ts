@@ -13,48 +13,66 @@ const handleFetchResponse = async (response: Response) => {
   return response.json();
 };
 
-export const fetchPopularMovies = async (fetchFn: typeof fetch): Promise<Movie[]> => {
-  const data = await tmdbFetch<TMDBRespones<{ id: number; title: string; backdrop_path: string }>>(
-    'movie/popular',
-    {},
-    fetchFn
-  );
+const KOREAN_FILTER = {
+  with_original_language: 'ko',
+  region: 'KR'
+} as const;
 
-  return data?.results || [];
+const fetchMovieList = async (
+  endpoint: string,
+  fetchFn: typeof fetch,
+  params: Record<string, string | number | boolean> = {}
+): Promise<Movie[]> => {
+  const data = await tmdbFetch<TMDBResponse<Movie>>(endpoint, params, fetchFn);
+  return data?.results ?? [];
 };
 
-export const fetchTrendingMovies = async (fetchFn: typeof fetch): Promise<Movie[]> => {
-  const data = await tmdbFetch<TMDBRespones<{ id: number; title: string; backdrop_path: string }>>(
-    'trending/movie/week',
-    {},
-    fetchFn
-  );
+export const fetchPopularMovies = (fetchFn: typeof fetch) =>
+  fetchMovieList('discover/movie', fetchFn, {
+    ...KOREAN_FILTER,
+    sort_by: 'popularity.desc',
+    'vote_count.gte': 50
+  });
 
-  return data?.results || [];
+export const fetchTrendingMovies = (fetchFn: typeof fetch) => {
+  const since = new Date();
+  since.setFullYear(since.getFullYear() - 2);
+  const sinceDate = since.toISOString().slice(0, 10);
+  return fetchMovieList('discover/movie', fetchFn, {
+    ...KOREAN_FILTER,
+    sort_by: 'popularity.desc',
+    'primary_release_date.gte': sinceDate,
+    'vote_count.gte': 10
+  });
 };
 
-export const fetchTopRatedMovies = async (fetchFn: typeof fetch): Promise<Movie[]> => {
-  const data = await tmdbFetch<TMDBRespones<{ id: number; title: string; backdrop_path: string }>>(
-    'movie/top_rated',
-    {},
-    fetchFn
-  );
+export const fetchTopRatedMovies = (fetchFn: typeof fetch) =>
+  fetchMovieList('discover/movie', fetchFn, {
+    ...KOREAN_FILTER,
+    sort_by: 'vote_average.desc',
+    'vote_count.gte': 200
+  });
 
-  return data?.results || [];
+export const fetchNewReleases = (fetchFn: typeof fetch) => {
+  const today = new Date().toISOString().slice(0, 10);
+  return fetchMovieList('discover/movie', fetchFn, {
+    ...KOREAN_FILTER,
+    sort_by: 'primary_release_date.desc',
+    'primary_release_date.lte': today,
+    'vote_count.gte': 5
+  });
 };
+
+export const getMoviesByGenre = (fetchFn: typeof fetch, id: number | string) =>
+  fetchMovieList('discover/movie', fetchFn, {
+    ...KOREAN_FILTER,
+    sort_by: 'popularity.desc',
+    with_genres: id
+  });
 
 export const getGenres = async (fetchFn: typeof fetch): Promise<Genre[] | null> => {
   const data = await tmdbFetch<{ genres: Genre[] }>('genre/movie/list', {}, fetchFn);
   return data?.genres || null;
-};
-
-export const getMoviesByGenre = async (fetchFn: typeof fetch, id: number): Promise<Movie[]> => {
-  const data = await tmdbFetch<TMDBRespones<{ id: number; title: string; backdrop_path: string }>>(
-    'discover/movie',
-    { with_genres: id },
-    fetchFn
-  );
-  return data?.results || [];
 };
 
 export const getMovieTrailer = async (movieId: number): Promise<Trailer> => {
@@ -62,9 +80,8 @@ export const getMovieTrailer = async (movieId: number): Promise<Trailer> => {
   const data = await handleFetchResponse(response);
 
   const trailer = data?.results.find(
-    (video: { type: string; site: string; key: string; name: string }) => {
-      return video.type === 'Trailer' && video.site === 'YouTube';
-    }
+    (video: { type: string; site: string; key: string; name: string }) =>
+      video.type === 'Trailer' && video.site === 'YouTube'
   );
 
   if (!trailer) {
@@ -103,11 +120,10 @@ export const searchMovies = async ({
     return [];
   }
 
-  const encodedQuery = encodeURIComponent(searchQuery.trim());
-  const data = await tmdbFetch<TMDBRespones<{ id: number; title: string; backdrop_path: string }>>(
-    'search/movie',
-    { query: encodedQuery, page },
-    fetchFn
-  );
-  return data?.results || [];
+  const results = await fetchMovieList('search/movie', fetchFn, {
+    query: searchQuery.trim(),
+    page,
+    region: 'KR'
+  });
+  return results.filter((m) => m.original_language === 'ko');
 };
