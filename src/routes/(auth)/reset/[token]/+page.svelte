@@ -3,8 +3,8 @@
   import { goto } from '$app/navigation';
   import { page } from '$app/state';
   import { confirmPasswordReset, verifyPasswordResetCode } from 'firebase/auth';
-  import { auth, authErrorMessage } from '$utils/firebase';
-  import { AUTH_REDIRECT_DELAY_MS } from '$lib/constants';
+  import { auth, authErrorMessage } from '$lib/firebaseClient';
+  import { AUTH_REDIRECT_DELAY_MS } from '$lib/constants/timing.constants';
   import AuthCard from '$components/auth/AuthCard.svelte';
   import PasswordField from '$components/auth/PasswordField.svelte';
   import PrimaryButton from '$components/auth/PrimaryButton.svelte';
@@ -14,10 +14,6 @@
 
   let newPassword = $state('');
   let confirmPassword = $state('');
-  // TODO: the "Sign out of other devices" checkbox below is wired to this state
-  // but the submit handler never reads it. Either remove the control or call
-  // `getAuth().currentUser?.getIdToken(true)` + admin SDK revocation on submit.
-  let signOutOthers = $state(true);
   let loading = $state(false);
   let success = $state(false);
   let touched = $state(false);
@@ -96,12 +92,6 @@
     error={confirmError}
     required
   />
-
-  <label class="auth-check !mb-5">
-    <input type="checkbox" bind:checked={signOutOthers} />
-    <span class="auth-check-box shrink-0"></span>
-    Sign out of other devices for security
-  </label>
 
   <PrimaryButton {loading} {success} disabled={codeInvalid}>Save Password</PrimaryButton>
 </AuthCard>

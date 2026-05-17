@@ -11,7 +11,9 @@
     "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
     "check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
     "format": "prettier --write .",
-    "lint": "prettier --check . && eslint ."
+    "lint": "prettier --check . && eslint .",
+    "lint:fix": "prettier --write . && eslint . --fix",
+    "verify": "bun run check && bun run lint"
   },
   "devDependencies": {
     "@eslint/compat": "^2.0.3",
@@ -45,6 +47,7 @@
     "bits-ui": "^2.18.1",
     "clsx": "^2.1.1",
     "firebase": "^12.13.0",
+    "hls.js": "^1.6.16",
     "plyr": "^3.8.4",
     "tailwind-merge": "^3.6.0",
     "tailwind-variants": "^3.2.2"

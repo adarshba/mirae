@@ -1,6 +1,6 @@
 <script lang="ts">
   import { goto } from '$app/navigation';
-  import { getAuthContext } from '$stores/AuthStore.svelte';
+  import { getAuthContext } from '$stores/authStore.svelte';
   import User from '@lucide/svelte/icons/user';
   import HelpCircle from '@lucide/svelte/icons/help-circle';
   import LogOut from '@lucide/svelte/icons/log-out';

@@ -1,172 +1,115 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+Operational rules for Claude Code in this repo. Deep reference lives in `docs/`.
 
-## Project Overview
+## Project
 
-Mirae is a Korean-drama streaming UI built with **SvelteKit (Svelte 5, runes)**, **TypeScript**, **Tailwind CSS v4** (with custom `@theme` tokens in `src/app.css`), **Firebase Auth**, and **Bun**. It's TMDB-powered and deploys to Vercel via `@sveltejs/adapter-vercel`.
+Mirae — Korean-drama streaming UI. SvelteKit (Svelte 5 runes) + TypeScript + Tailwind v4 + Firebase Auth + TMDB. Deploys to Vercel. Package manager is **Bun**.
 
 ## Commands
-
-Package manager is **Bun** (see `bun.lock`, `.npmrc` sets `engine-strict=true`).
 
 ```bash
 bun install
 bun dev            # vite dev server
 bun run build      # production build (Vercel adapter)
-bun preview        # preview production build
 bun check          # svelte-kit sync && svelte-check
-bun check:watch
-bun lint           # prettier --check . && eslint .
-bun format         # prettier --write .
+bun lint           # prettier --check . && eslint .    (read-only; CI-safe)
+bun format         # prettier --write .                (write)
+bun run lint:fix   # prettier --write . && eslint . --fix
+bun run verify     # bun check && bun lint             (use before declaring task complete)
 ```
 
-`bun` is the package manager and runtime. `vite` does the actual bundling. `eslint` and `prettier` only lint/format — they never build.
-
-There is no test runner configured. Per the user's `CLAUDE.md` "FORCED VERIFICATION" rule, run `bun check` and `bun lint` before declaring a task complete — and explicitly state that there are no tests rather than claiming a test suite passed.
+No test runner is configured. Before declaring a task complete: run `bun run verify`, and state explicitly that there are no tests.
 
 ## Environment
 
-Set the following in `.env` (see `.env.example`):
+`.env` (see `.env.example`):
 
-- `TMDB_API_KEY` — read via `$env/dynamic/private` in `src/lib/server/api/tmdb-client.ts`, which **throws at module load** if missing. The server will not boot without it.
-- `PUBLIC_FIREBASE_API_KEY`, `PUBLIC_FIREBASE_AUTH_DOMAIN`, `PUBLIC_FIREBASE_PROJECT_ID`, `PUBLIC_FIREBASE_APP_ID` — used by `src/lib/firebase.ts` on the client.
+- `TMDB_API_KEY` — server-only. `src/lib/server/api/tmdbClient.ts` throws at module load if missing.
+- `PUBLIC_FIREBASE_API_KEY`, `PUBLIC_FIREBASE_AUTH_DOMAIN`, `PUBLIC_FIREBASE_PROJECT_ID`, `PUBLIC_FIREBASE_APP_ID` — client (`src/lib/firebaseClient.ts`).
 
-## Deployment
-
-Production target is Vercel via `@sveltejs/adapter-vercel`. No `vercel.json` is required — the adapter emits Vercel-compatible function output. Vercel auto-detects `bun.lock` and uses Bun for install/build.
-
-For first-time setup: add the Vercel domain to **Firebase Console → Authentication → Authorized domains**, otherwise login fails with `auth/unauthorized-domain`.
+For first-time Vercel deploy: add the Vercel domain to Firebase Console → Authentication → Authorized domains.
 
 ## Path Aliases
 
-Defined in `svelte.config.js` (use these, not relative paths):
+Defined in `svelte.config.js`. Always use these, never relative paths across feature boundaries.
 
 - `$components` → `src/lib/components`
 - `$stores` → `src/lib/stores`
 - `$types` → `src/lib/types`
 - `$api` → `src/lib/server/api` (server-only)
 - `$utils` → `src/lib`
-- `$lib` → `src/lib` (SvelteKit default)
+- `$lib` → `src/lib`
 
-## Architecture
+## Forbidden patterns
 
-### Layout
+Hard constraints. Treat each as a compile error.
 
-```
-src/
-├── app.css                       Tailwind v4 entry + @theme tokens + base layer
-├── lib/
-│   ├── constants.ts              Shared constants — see "Constants" section below
-│   ├── helpers.ts                Pure helpers (tmdbImage, matchPercent, releaseYear, fetchTrailer, ...)
-│   ├── firebase.ts               Firebase client init + authErrorMessage()
-│   ├── utils.ts                  cn() classname helper (clsx + tailwind-merge)
-│   ├── components/               Feature components and the auth/profile/ui subtrees
-│   ├── fixtures/                 Mock seed data (e.g. MOCK_ACCOUNT for the account page)
-│   ├── server/api/               TMDB client (server-only) — tmdb-client.ts + catalog.ts
-│   ├── stores/                   Class-based runes stores + createContext<T>() pairs
-│   └── types/                    Ambient .d.ts files (Movie, Account, TrackedDevice, ...)
-└── routes/                       SvelteKit pages, layouts, and API endpoints
-```
+- Never use `any`.
+- Never use `as` casting. No `as unknown as T`. No `!` non-null assertions.
+- Never call TMDB from the browser. Route through `$api/catalogService.ts` via a `+page.server.ts` loader or an `/api/...` `+server.ts` proxy.
+- Never reconstruct TMDB image URLs inline. Use `getTmdbPosterUrl` / `getTmdbBackdropUrl` from `$lib/tmdb`.
+- Never `new` a store inside a component. Instantiate once in `src/routes/+layout.svelte` and read via `getXContext()`.
+- Never declare shared types inline in `.svelte` or service files. They belong in `src/lib/types/*.types.ts`.
+- Never use raw hex or raw px for tokenized values in `<style>` blocks. Use `var(--space-N)` / `var(--text-primary)` etc.
+- Never use vague filenames: `utils.ts`, `helpers.ts`, `common.ts`, `misc.ts`, `manager.ts`.
+- Never commit `.env` or anything containing real credentials.
 
-### Data flow
+## Naming rules
 
-TMDB is **never** called from the browser. Two paths reach it, both via `$api/catalog.ts` which wraps `$api/tmdb-client.ts#tmdbFetch`:
+Detail in `docs/naming.md`. Quick reference:
 
-1. **SvelteKit `+page.server.ts` loaders** (e.g. `src/routes/+page.server.ts`) call helpers in `$api/catalog.ts` directly. The root page loads popular/top-rated/trending/new-releases in parallel, then fans out one `discover/movie?with_genres=<id>` call per row in `CURATED_GENRE_ROWS` via `Promise.all` — keep this pattern when adding shelves.
-2. **Internal `/api/*` endpoints** (`src/routes/api/movie/[id]`, `.../similar`, `src/routes/api/trailer/[movieId]`) are thin proxies to the same catalog helpers. The client-side `ModalStore` and `helpers.ts#fetchTrailer` hit these — do not bypass them and call TMDB directly from a `+page.svelte` or `.svelte.ts` file.
+- **Components**: `PascalCase.svelte` describing responsibility (`TitleRow.svelte`, not `BigCard.svelte`).
+- **Routes**: kebab-case folders (`my-list/`, `watch-history/`).
+- **TS modules**: camelCase with semantic suffix (`catalogService.ts`, `authStore.svelte.ts`).
+- **Type files**: `*.types.ts`. Constants: `*.constants.ts`. Fixtures: `*.fixtures.ts`.
+- **Functions**: verb-first (`fetchTitle`, `getTmdbPosterUrl`, `formatReleaseYear`).
+- **Constants**: `UPPER_SNAKE_CASE`.
+- **Domain noun**: `title` is canonical. Don't mix `movie` / `media` / `content` / `film` in new code. External TMDB endpoint paths (`discover/movie`, `movie/{id}/videos`) keep TMDB's wording — those are an outside contract.
 
-When extending the catalog, add the helper to `$api/catalog.ts` (calling `tmdbFetch` for transport) and either expose it via a loader or a new `/api/...` `+server.ts` route, mirroring the existing thin-proxy style.
+## Type safety rules
 
-### State: Svelte 5 runes + context
+Detail in `docs/types.md`. Hard rules:
 
-All cross-component state is a **runes-based class store** instantiated **once in `src/routes/+layout.svelte`** and pushed into context with a `createContext<T>()` pair exported from each store file:
+- Shared types live in `src/lib/types/*.types.ts` and are ambient (no import needed). One-off `Props` types stay inline in the component.
+- Narrow `unknown` with a type guard before use. Never cast it.
+- For external/dynamic payloads, validate at the boundary or write a guard. Don't trust the wire.
 
-- `MovieStore` — `popularMovies`, randomly picks `selectedMovie` for the Billboard; tracks tried IDs in a `SvelteSet`
-- `MovieCardStore` — hover-preview position/dimensions
-- `ModalStore` — show-details modal, includes a `SvelteMap` cache for already-fetched `MovieDetails`
-- `AuthStore` — Firebase `onAuthStateChanged` wrapper, exposes `user` + `ready` + `signOut`
-- `AccountStore` — wraps `MOCK_ACCOUNT` from `$lib/fixtures/account.ts` (TODO: replace with real loader)
-- `DeviceStore` — tracks the current browser session in `localStorage` keyed by Firebase `uid`
-- `favoriteListStore` — factory function (not class) backed by `localStorage` under `STORAGE_KEYS.favorites`; guards `localStorage` access with `browser` from `$app/environment`
+## Architecture rules
 
-Pattern to follow when adding a new store: export `getXContext`/`setXContext` from a `*.svelte.ts` file, instantiate in `+layout.svelte`, and call `setXContext(...)` there. Consumers call `getXContext()` — do not `new` a store inside a component.
+Detail in `docs/architecture.md`. Quick reference:
 
-### Auth & route guarding
+- Data flow: `+page.server.ts` loaders OR `/api/...` `+server.ts` → `$api/catalogService.ts` → `$api/tmdbClient.ts#tmdbFetch`. Two paths, no others.
+- State: class-based runes stores in `src/lib/stores/*.svelte.ts`, paired with `createContext<T>()`. Instantiated once in `+layout.svelte`.
+- `TitleHoverPreview` and `TitleDetailsModal` mount once in `+layout.svelte` and are driven by store state. Don't re-render them locally.
+- Route guards: `AUTH_ROUTES` and `PROTECTED_ROUTES` from `$lib/constants/routes.constants.ts`. Logged-in users on auth routes redirect to `/`. Guests on protected routes redirect to `/login?from=<path>`.
+- Constants: anything used by more than one file goes in `src/lib/constants/*.constants.ts`. Single-component magic numbers stay local.
 
-`src/routes/+layout.svelte` uses two arrays from `$lib/constants`:
+## Comments
 
-- `AUTH_ROUTES` — `/login`, `/signup`, `/forgot`, `/reset`. Logged-in users are redirected to `/`.
-- `PROTECTED_ROUTES` — `/account`, `/myList`, `/watch`. Guests are redirected to `/login?from=<path>`.
+Detail in `docs/commenting.md`. Default to no comments. Allowed labels: `TODO`, `FIXME`, `HACK`, `BUG`, `NOTE`, `XXX`, `MARK`. One line. Explain _why_, never _what_. No commented-out code (use git).
 
-Pages outside both arrays are public (with guest-mode degraded interaction handled component-side via `getAuthContext().user`).
+## Workflow
 
-The auth subtree `src/routes/(auth)/...` shares a minimal layout (no Navbar/Footer). Form primitives live in `src/lib/components/auth/` (`AuthCard`, `TextField`, `PasswordField`, `PrimaryButton`, `OutlineButton`, `Banner`, `ResendButton`, `StrengthMeter`).
+- For 3+ step or architectural tasks, plan first. For multi-file refactors, work in phases of ≤5 files and verify between phases.
+- Before editing a file, re-read it. Tool results can be stale.
+- After every structural rename, search for: direct refs, type refs, string literals, dynamic imports, re-exports, tests/mocks. Grep is not semantic.
+- Run `bun run verify` before reporting any task complete. If it fails, the task is not done.
+- Fix root causes. Never bypass with `--no-verify`, `// @ts-ignore`, `as unknown as T`, or feature-flagged skips.
+- Follow `docs/workflow.md` for the issue → branch → commit → PR flow. Commits use Conventional Commits (`feat:`, `fix:`, `chore:`, `refactor:`, `docs:`, `perf:`). PR bodies must include `Closes #<issue>`.
 
-### Constants
+## Outstanding work
 
-Shared constants live in `src/lib/constants.ts`. **If a value is referenced in more than one file, or defines an external contract, put it here.** Magic numbers used by a single component stay in that component.
+Search `TODO` / `FIXME` in the codebase for current items. Known longer-lived ones:
 
-Current groups:
+- `DeviceStore.signOutDevice` / `signOutAll` update local state only; full revoke needs Firebase Admin SDK.
+- `searchTitles` in `catalogService.ts` post-filters by `original_language === 'ko'`, breaking TMDB pagination.
+- `AccountStore` uses `MOCK_ACCOUNT`. Real billing/profile loader not wired.
 
-- **TMDB**: `TMDB_BASE_URL`, `TMDB_IMG_BASE`, `TMDB_IMG_SIZE`, `CURATED_GENRE_ROWS`. Use the `tmdbImage(path, size)` / `tmdbPoster(path)` / `tmdbBackdrop(path)` helpers in `helpers.ts` — never reconstruct `https://image.tmdb.org/t/p/...` inline.
-- **Routing**: `AUTH_ROUTES`, `PROTECTED_ROUTES`.
-- **Storage**: `STORAGE_KEYS.favorites`, `STORAGE_KEYS.devicesPrefix`.
-- **Timings**: `HOVER_DELAY_MS`, `AUTH_REDIRECT_DELAY_MS`, `NAVBAR_STICKY_SCROLL_PX`, `HOVER_PREVIEW_Y_OFFSET_PX`.
+## Deep reference
 
-### Types
-
-Ambient global types live in `src/lib/types/`:
-
-- `types.d.ts` — TMDB shapes (`Movie`, `MovieDetails`, `Genre`, `TMDBResponse`, `Trailer`, ...) and a few UI types (`PopupPosition`, `SimilarCardProps`, `CardState`, `ModalState`).
-- `profile.d.ts` — `Account`, `TrackedDevice`, `DeviceKind`, plan/device types.
-
-No `import` needed to use them — they're ambient. **When adding a new data shape used across multiple files, put it in `src/lib/types/` rather than declaring it inline.** Tiny one-off `Props` types stay inline in the component.
-
-### Components
-
-`src/lib/components/` is organized:
-
-- **Top level** — feature components (`Billboard`, `ContentRow`, `Thumbnail`, `HoverPreview`, `Navbar`, `Footer`, `ShowDetails`, `RelatedCard`, `VideoPlayer`).
-- **`auth/`** — login/signup form primitives.
-- **`profile/`** — `Avatar`, `ProfileDropdown`.
-- **`ui/`** — `bits-ui`-based shadcn-svelte primitives (alert, avatar, button, checkbox, dialog, dropdown-menu, input, label, scroll-area, separator).
-
-`HoverPreview` and `ShowDetails` are mounted once in `+layout.svelte` and driven entirely by store state — components that want to open the modal or trigger a hover should mutate the corresponding store, not render their own modal/preview.
-
-## Styling: Tailwind v4 + design tokens
-
-Single CSS entry at `src/app.css`, imported once from `src/routes/+layout.svelte`. It contains:
-
-1. `@import 'tailwindcss';` and any plugins.
-2. The Pretendard font import.
-3. A `@theme { ... }` block defining design tokens (colors, spacing, brand palette, auth-specific vars).
-4. `@layer base` for body/html/scrollbar/typography resets.
-5. `@layer components` for shared semantic classes (`.btn`, `.btn-primary`, `.btn-icon`, `.text-display`, `.text-h1`, `.text-body`, `.badge-match`, `.no-scrollbar`, ...).
-
-Component `<style>` block rules:
-
-1. Prefer Tailwind utilities in `class="..."` for layout. Keep `<style>` blocks for component-specific rules that can't be expressed atomically.
-2. **No raw hex, no raw px** for tokenized values — use the CSS variables defined in `@theme` (e.g. `var(--space-6)`, `var(--text-primary)`). Viewport units and dynamic geometry are fine.
-3. Dynamic geometry from JS goes through CSS custom properties via `style="--x: {x}px"`, not inline `style="top: …"`. See `HoverPreview.svelte`.
-4. `:global()` only for documented third-party overrides (Plyr's `--plyr-*` vars in `VideoPlayer.svelte`) or for icons passed to slot-less Lucide components.
-
-## Linting & Formatting
-
-- ESLint flat config (`eslint.config.js`) extends `js.recommended`, `typescript-eslint`, `eslint-plugin-svelte` (+ its prettier config), and `eslint-config-prettier`. It honors `.gitignore` via `@eslint/compat`'s `includeIgnoreFile`.
-- `no-undef` is intentionally off (TS handles it).
-- `svelte/no-navigation-without-resolve` is off due to a conflict with typed `resolve()` + dynamic routes — don't re-enable it without addressing that.
-- Prettier config (`.prettierrc`) uses `prettier-plugin-svelte` + `prettier-plugin-tailwindcss`. Drives both `bun format` and `bun lint`.
-
-## TypeScript
-
-`tsconfig.json` extends `.svelte-kit/tsconfig.json` (generated by `svelte-kit sync`). Key flags: `strict: true`, `checkJs: true`, `allowJs: true`, `moduleResolution: "bundler"`, `rewriteRelativeImportExtensions: true`. Always run `bun check` (which runs `svelte-kit sync` first) after touching types, route files, or path aliases — stale `.svelte-kit/tsconfig.json` is a common source of phantom errors.
-
-## Outstanding work (search the codebase for `TODO` / `FIXME`)
-
-- `ShowDetails.svelte` add-to-list button always adds; should toggle (see `HoverPreview.svelte` for the correct pattern).
-- `DeviceStore.signOutDevice` / `signOutAll` only update local state; they don't revoke Firebase tokens.
-- `reset/[token]/+page.svelte` "Sign out other devices" checkbox is wired but never read by the submit handler.
-- `searchMovies` in `catalog.ts` post-filters by `original_language === 'ko'`, breaking TMDB pagination.
-- `MovieStore.pickRandom` never resets its `tried` set — if every popular movie fails trailer lookup, the Billboard stalls silently.
-- `AccountStore` uses `MOCK_ACCOUNT` from `$lib/fixtures/account.ts`. Real billing/profile loader not wired.
+- [`docs/architecture.md`](docs/architecture.md) — layout, data flow, stores, styling, auth.
+- [`docs/naming.md`](docs/naming.md) — full naming convention spec.
+- [`docs/types.md`](docs/types.md) — type safety, casting, type modeling.
+- [`docs/commenting.md`](docs/commenting.md) — comment policy with examples.
+- [`docs/workflow.md`](docs/workflow.md) — issue, branch, commit, and PR conventions.

@@ -2,33 +2,34 @@
   import '../app.css';
   import favicon from '$lib/assets/favicon.svg';
   import type { LayoutProps } from './$types';
-  import { MovieStore, setMoviesContext } from '$stores/MovieStore.svelte';
-  import HoverPreview from '$components/HoverPreview.svelte';
-  import { MovieCardStore, setMovieCardContext } from '$stores/MovieCardStore.svelte';
-  import { createFavoriteListStore, setFavoritesContext } from '$stores/favoriteListStore.svelte';
+  import { TitleStore, setTitleContext } from '$stores/titleStore.svelte';
+  import TitleHoverPreview from '$components/TitleHoverPreview.svelte';
+  import { TitleCardStore, setTitleCardContext } from '$stores/titleCardStore.svelte';
+  import { createFavoritesStore, setFavoritesContext } from '$stores/favoritesStore.svelte';
   import Navbar from '$components/Navbar.svelte';
   import Footer from '$components/Footer.svelte';
-  import { ModalStore, setModalContext } from '$stores/ModalStore.svelte';
-  import ShowDetails from '$components/ShowDetails.svelte';
-  import { AccountStore, setAccountContext } from '$stores/AccountStore.svelte';
-  import { AuthStore, setAuthContext } from '$stores/AuthStore.svelte';
-  import { DeviceStore, setDeviceContext } from '$stores/DeviceStore.svelte';
+  import { ModalStore, setModalContext } from '$stores/modalStore.svelte';
+  import TitleDetailsModal from '$components/TitleDetailsModal.svelte';
+  import { AccountStore, setAccountContext } from '$stores/accountStore.svelte';
+  import { AuthStore, setAuthContext } from '$stores/authStore.svelte';
+  import { DeviceStore, setDeviceContext } from '$stores/deviceStore.svelte';
   import { page } from '$app/state';
   import { goto } from '$app/navigation';
-  import { AUTH_ROUTES, PROTECTED_ROUTES, HOVER_PREVIEW_Y_OFFSET_PX } from '$lib/constants';
+  import { AUTH_ROUTES, PROTECTED_ROUTES } from '$lib/constants/routes.constants';
+  import { HOVER_PREVIEW_Y_OFFSET_PX } from '$lib/constants/timing.constants';
 
   let { children }: LayoutProps = $props();
 
-  const movieStore = new MovieStore();
-  const cardStore = new MovieCardStore();
-  const favoritesStore = createFavoriteListStore();
+  const titleStore = new TitleStore();
+  const cardStore = new TitleCardStore();
+  const favoritesStore = createFavoritesStore();
   const modalStore = new ModalStore();
   const accountStore = new AccountStore();
   const authStore = new AuthStore();
   const deviceStore = new DeviceStore();
 
-  setMovieCardContext(cardStore);
-  setMoviesContext(movieStore);
+  setTitleCardContext(cardStore);
+  setTitleContext(titleStore);
   setFavoritesContext(favoritesStore);
   setModalContext(modalStore);
   setAccountContext(accountStore);
@@ -41,7 +42,8 @@
 
   const isAuthRoute = $derived(AUTH_ROUTES.some((p) => page.url.pathname.startsWith(p)));
   const isProtectedRoute = $derived(PROTECTED_ROUTES.some((p) => page.url.pathname.startsWith(p)));
-  const isMinimalLayout = $derived(isAuthRoute);
+  const isWatchRoute = $derived(page.url.pathname.startsWith('/watch'));
+  const isMinimalLayout = $derived(isAuthRoute || isWatchRoute);
 
   $effect(() => {
     if (!authStore.ready) return;
@@ -59,11 +61,11 @@
   <title>Mirae · K-Drama Streaming</title>
 </svelte:head>
 {#if !isMinimalLayout}
-  <HoverPreview
+  <TitleHoverPreview
     position={{ x: cardStore.position.x, y: cardStore.position.y + HOVER_PREVIEW_Y_OFFSET_PX }}
   />
   <Navbar />
-  <ShowDetails />
+  <TitleDetailsModal />
 {/if}
 <main class="app-main">
   {@render children()}

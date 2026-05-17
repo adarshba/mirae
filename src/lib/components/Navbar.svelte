@@ -6,10 +6,10 @@
   import Menu from '@lucide/svelte/icons/menu';
   import X from '@lucide/svelte/icons/x';
   import { goto } from '$app/navigation';
-  import { getAuthContext } from '$stores/AuthStore.svelte';
+  import { getAuthContext } from '$stores/authStore.svelte';
   import Avatar from '$components/profile/Avatar.svelte';
   import ProfileDropdown from '$components/profile/ProfileDropdown.svelte';
-  import { NAVBAR_STICKY_SCROLL_PX } from '$lib/constants';
+  import { NAVBAR_STICKY_SCROLL_PX } from '$lib/constants/timing.constants';
 
   let isSearchActive = $state(false);
   let isMenuOpen = $state(false);
@@ -24,7 +24,7 @@
 
   type NavItem = { name: string; href: string };
   const navItems = $derived<NavItem[]>(
-    authStore.user ? [{ name: 'My List', href: '/myList' }] : []
+    authStore.user ? [{ name: 'My List', href: '/my-list' }] : []
   );
 
   const activateSearch = () => {

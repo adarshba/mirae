@@ -1,41 +1,41 @@
 import {
   fetchNewReleases,
-  fetchPopularMovies,
-  fetchTopRatedMovies,
-  fetchTrendingMovies,
-  getMoviesByGenre
-} from '$api/catalog';
-import { CURATED_GENRE_ROWS } from '$lib/constants';
+  fetchPopularTitles,
+  fetchTopRatedTitles,
+  fetchTrendingTitles,
+  getTitlesByGenre
+} from '$api/catalogService';
+import { CURATED_GENRE_ROWS } from '$lib/constants/tmdb.constants';
 import type { PageServerLoad } from './$types';
 
 export const load = (async ({ fetch }) => {
   try {
-    const [popularMovies, topRatedMovies, trendingMovies, newReleases, ...curatedResults] =
+    const [popularTitles, topRatedTitles, trendingTitles, newReleases, ...curatedResults] =
       await Promise.all([
-        fetchPopularMovies(fetch),
-        fetchTopRatedMovies(fetch),
-        fetchTrendingMovies(fetch),
+        fetchPopularTitles(fetch),
+        fetchTopRatedTitles(fetch),
+        fetchTrendingTitles(fetch),
         fetchNewReleases(fetch),
-        ...CURATED_GENRE_ROWS.map((row) => getMoviesByGenre(fetch, row.genreIds.join(',')))
+        ...CURATED_GENRE_ROWS.map((row) => getTitlesByGenre(fetch, row.genreIds.join(',')))
       ]);
 
-    const curatedRows: MoviesWithGenre[] = CURATED_GENRE_ROWS.map((row, i) => ({
+    const curatedRows: TitleGenreRow[] = CURATED_GENRE_ROWS.map((row, i) => ({
       id: row.id,
       name: row.name,
-      movies: curatedResults[i]
+      titles: curatedResults[i]
     }));
 
-    if (popularMovies.length === 0) {
-      throw new Error('No popular movies found.');
+    if (popularTitles.length === 0) {
+      throw new Error('No popular titles found.');
     }
 
-    return { popularMovies, topRatedMovies, trendingMovies, newReleases, curatedRows };
+    return { popularTitles, topRatedTitles, trendingTitles, newReleases, curatedRows };
   } catch (err) {
     console.error('Catalog load failed:', err);
     return {
-      popularMovies: [],
-      topRatedMovies: [],
-      trendingMovies: [],
+      popularTitles: [],
+      topRatedTitles: [],
+      trendingTitles: [],
       newReleases: [],
       curatedRows: []
     };

@@ -1,7 +1,7 @@
 <script lang="ts">
-  import { getAccountContext } from '$stores/AccountStore.svelte';
-  import { getAuthContext } from '$stores/AuthStore.svelte';
-  import { getDeviceContext } from '$stores/DeviceStore.svelte';
+  import { getAccountContext } from '$stores/accountStore.svelte';
+  import { getAuthContext } from '$stores/authStore.svelte';
+  import { getDeviceContext } from '$stores/deviceStore.svelte';
   import Avatar from '$components/profile/Avatar.svelte';
   import Tv from '@lucide/svelte/icons/tv';
   import Smartphone from '@lucide/svelte/icons/smartphone';

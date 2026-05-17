@@ -1,8 +1,8 @@
 <script lang="ts">
   import { goto } from '$app/navigation';
   import { sendPasswordResetEmail } from 'firebase/auth';
-  import { auth, authErrorMessage } from '$utils/firebase';
-  import { AUTH_REDIRECT_DELAY_MS } from '$lib/constants';
+  import { auth, authErrorMessage } from '$lib/firebaseClient';
+  import { AUTH_REDIRECT_DELAY_MS } from '$lib/constants/timing.constants';
   import ChevronLeft from '@lucide/svelte/icons/chevron-left';
   import AuthCard from '$components/auth/AuthCard.svelte';
   import TextField from '$components/auth/TextField.svelte';

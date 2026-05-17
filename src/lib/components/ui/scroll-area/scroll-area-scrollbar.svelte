@@ -1,6 +1,6 @@
 <script lang="ts">
   import { ScrollArea as ScrollAreaPrimitive } from 'bits-ui';
-  import { cn, type WithoutChild } from '$utils/utils.js';
+  import { cn, type WithoutChild } from '$lib/cn';
 
   let {
     ref = $bindable(null),

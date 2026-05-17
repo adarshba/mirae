@@ -21,11 +21,22 @@ export default defineConfig(
     languageOptions: { globals: { ...globals.browser, ...globals.node } },
 
     rules: {
-      // typescript-eslint strongly recommend that you do not use the no-undef lint rule on TypeScript projects.
-      // see: https://typescript-eslint.io/troubleshooting/faqs/eslint/#i-get-errors-from-the-no-undef-rule-about-global-variables-not-being-defined-even-though-there-are-no-typescript-errors
+      // NOTE: typescript-eslint recommends disabling no-undef on TS projects — https://typescript-eslint.io/troubleshooting/faqs/eslint/#i-get-errors-from-the-no-undef-rule-about-global-variables-not-being-defined-even-though-there-are-no-typescript-errors
       'no-undef': 'off',
-      // Disabled due to conflict with SvelteKit's typed resolve() and dynamic routes
-      'svelte/no-navigation-without-resolve': 'off'
+      // NOTE: conflicts with SvelteKit's typed resolve() on dynamic routes.
+      'svelte/no-navigation-without-resolve': 'off',
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['**/helpers', '**/utils', '**/manager', '**/common', '**/misc'],
+              message:
+                'Use a responsibility-named module instead of helpers/utils/manager/common/misc.'
+            }
+          ]
+        }
+      ]
     }
   },
   {

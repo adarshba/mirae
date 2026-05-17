@@ -3,7 +3,7 @@
   import DialogPortal from './dialog-portal.svelte';
   import type { Snippet } from 'svelte';
   import * as Dialog from './index.js';
-  import { cn, type WithoutChildrenOrChild } from '$utils/utils.js';
+  import { cn, type WithoutChildrenOrChild } from '$lib/cn';
   import type { ComponentProps } from 'svelte';
   import { Button } from '$components/ui/button/index.js';
   import XIcon from '@lucide/svelte/icons/x';

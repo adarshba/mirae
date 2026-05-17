@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Separator as SeparatorPrimitive } from 'bits-ui';
-  import { cn } from '$utils/utils.js';
+  import { cn } from '$lib/cn';
 
   let {
     ref = $bindable(null),
@@ -15,7 +15,7 @@
   data-slot={dataSlot}
   class={cn(
     'bg-border shrink-0 data-[orientation=horizontal]:h-px data-[orientation=horizontal]:w-full data-[orientation=vertical]:w-px',
-    // this is different in shadcn/ui but self-stretch breaks things for us
+    // HACK: diverges from shadcn/ui — self-stretch breaks layout here.
     'data-[orientation=vertical]:h-full',
     className
   )}

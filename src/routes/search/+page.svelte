@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { PageProps } from './$types';
-  import Thumbnail from '$components/Thumbnail.svelte';
+  import TitleThumbnail from '$components/TitleThumbnail.svelte';
 
   const { data }: PageProps = $props();
 </script>
@@ -22,8 +22,8 @@
     <p class="search-page__empty">No K-dramas match "{data.searchQuery}" yet.</p>
   {:else if data.searchResult.length}
     <div class="search-page__grid">
-      {#each data.searchResult as movie (movie.id)}
-        <Thumbnail {movie} />
+      {#each data.searchResult as title (title.id)}
+        <TitleThumbnail {title} />
       {/each}
     </div>
   {/if}

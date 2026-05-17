@@ -3,7 +3,7 @@
   import EyeOff from '@lucide/svelte/icons/eye-off';
   import AlertCircle from '@lucide/svelte/icons/alert-circle';
   import StrengthMeter from './StrengthMeter.svelte';
-  import { scorePassword } from './password-strength';
+  import { scorePassword } from './passwordStrength';
 
   type Props = {
     id: string;
